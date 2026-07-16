@@ -1,0 +1,96 @@
+{#
+/**
+ * @file
+ * Degree fact sheet full-page layout, provided by osu_cas_multisite.
+ *
+ * Reproduces the D7 layout (which lived in a Views block of custom-text
+ * fields): a banner with an overlaid program label + title, an intro box,
+ * then two columns — photo / "Faces of AgSci" / stats on the left, and
+ * degree options / careers / advising / social / links / PDF on the right.
+ *
+ * Variables prepared by osu_cas_multisite_preprocess_node().
+ #}
+<article{{ attributes.addClass('node', 'node--type-degree-fact-sheet', 'dfs') }}>
+  {{ title_prefix }}
+  {{ title_suffix }}
+
+  {% if dfs_banner_url %}
+    <div class="dfs-banner" style="background-image: url('{{ dfs_banner_url }}');">
+      <div class="dfs-banner__overlay">
+        <span class="dfs-banner__eyebrow">{{ dfs_degree_level|capitalize }} Program Fact Sheet</span>
+        <span class="dfs-banner__title">{{ label }}</span>
+      </div>
+    </div>
+  {% endif %}
+
+  {% if dfs_intro or dfs_intro_header %}
+    <div class="dfs-intro">
+      {% if dfs_intro_header %}<h2 class="dfs-intro__header">{{ dfs_intro_header }}</h2>{% endif %}
+      {{ dfs_intro }}
+    </div>
+  {% endif %}
+
+  <div class="dfs-body">
+    <aside class="dfs-body__left">
+      {{ dfs_photo }}
+      {% if dfs_faces %}
+        <h3 class="dfs-field-label">Faces of AgSci</h3>
+        <div class="dfs-faces">{{ dfs_faces }}</div>
+      {% endif %}
+      {% if dfs_num_students %}
+        <div class="dfs-stats">
+          <h4 class="dfs-stats__heading">By the Numbers</h4>
+          <div class="dfs-stat">
+            <span class="osu icon-osu-mortar-board"></span>
+            <span class="dfs-stat__value">{{ dfs_num_students }}</span>
+            <span class="dfs-stat__label">Number of undergraduate students in this major</span>
+          </div>
+        </div>
+      {% endif %}
+    </aside>
+
+    <div class="dfs-body__right">
+      {% if dfs_degree_options %}
+        <h3 class="dfs-field-label">{{ label }} Degree Options</h3>
+        {{ dfs_degree_options }}
+      {% endif %}
+
+      {% if dfs_career_paths %}
+        <h3 class="dfs-field-label">Degrees that Pay. Careers that Matter.</h3>
+        <ul class="dfs-careers">
+          {% for path in dfs_career_paths %}<li>{{ path }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if dfs_advisor or dfs_advising_email %}
+        <h3 class="dfs-field-label">Individualized Advising</h3>
+        <p>Advisors help students develop their course of study and connect them to
+          scholarships, campus resources, and experiential learning opportunities.
+          For {{ label }} advising, contact
+          {% if dfs_advisor %}{{ dfs_advisor }}{% endif %}{% if dfs_advising_email %}
+            <a href="mailto:{{ dfs_advising_email }}">{{ dfs_advising_email }}</a>{% endif %}.</p>
+      {% endif %}
+
+      {% if dfs_social %}
+        <h3 class="dfs-field-label">We're Social!</h3>
+        <ul class="dfs-social">
+          {% for s in dfs_social %}
+            <li><a href="{{ s.url }}" class="dfs-social__{{ s.name }}" target="_blank" rel="noopener">{{ s.name|capitalize }}</a></li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if dfs_learn_more %}
+        <h3 class="dfs-field-label">Learn More</h3>
+        <ul class="dfs-links">
+          {% for link in dfs_learn_more %}<li><a href="{{ link.url }}">{{ link.title }}</a></li>{% endfor %}
+        </ul>
+      {% endif %}
+
+      {% if dfs_pdf or dfs_pdf_es %}
+        <h3 class="dfs-field-label">Downloadable PDF of Fact Sheet</h3>
+        <div class="dfs-pdf">{{ dfs_pdf }}{{ dfs_pdf_es }}</div>
+      {% endif %}
+    </div>
+  </div>
+</article>

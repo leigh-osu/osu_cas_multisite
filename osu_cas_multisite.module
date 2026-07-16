@@ -1,0 +1,144 @@
+<?php
+
+/**
+ * @file
+ * OSU CAS Multisite — shared helpers and theming for the CAS platform.
+ */
+
+use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_theme().
+ *
+ * Registers the degree fact sheet full-page template shipped by this module.
+ * D7 rendered degree fact sheets with a Views block full of "Global: custom
+ * text" fields (hand-written HTML + inline CSS + tokens); there was no node
+ * template. This reproduces that layout as a real node template driven by the
+ * migrated fields.
+ */
+function osu_cas_multisite_theme($existing, $type, $theme, $path) {
+  return [
+    'node__degree_fact_sheet__full' => [
+      'base hook' => 'node',
+      'template' => 'node--degree-fact-sheet--full',
+      'path' => $path . '/templates',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for node templates.
+ *
+ * Prepares the degree fact sheet fields into named variables for the
+ * node--degree-fact-sheet--full template. Uses each field's own formatter via
+ * ->view() for rich content, and raw values where the template needs to build
+ * custom markup (banner background, social/learn-more link lists).
+ */
+function osu_cas_multisite_preprocess_node(array &$variables) {
+  $node = $variables['node'] ?? NULL;
+  if (!$node || $node->bundle() !== 'degree_fact_sheet' || ($variables['view_mode'] ?? '') !== 'full') {
+    return;
+  }
+
+  $variables['#attached']['library'][] = 'osu_cas_multisite/degree_fact_sheet';
+
+  // Small helpers.
+  $val = fn($f) => (!$node->get($f)->isEmpty()) ? $node->get($f)->value : NULL;
+  $render = fn($f) => (!$node->get($f)->isEmpty()) ? $node->get($f)->view(['label' => 'hidden']) : NULL;
+
+  // Banner background image URL.
+  if (!$node->get('field_dfs_banner')->isEmpty() && ($file = $node->get('field_dfs_banner')->entity)) {
+    $variables['dfs_banner_url'] = \Drupal::service('file_url_generator')->generateString($file->getFileUri());
+  }
+  $variables['dfs_degree_level'] = $val('field_dfs_degree_level');
+
+  // Intro box.
+  $variables['dfs_intro_header'] = $val('field_dfs_introduction_header');
+  $variables['dfs_intro'] = $render('field_dfs_introduction');
+
+  // Left column.
+  $variables['dfs_photo'] = $render('field_dfs_photo');
+  $variables['dfs_faces'] = $render('field_dfs_faces_of_agsci');
+  $variables['dfs_num_students'] = $val('field_dfs_number_of_students');
+
+  // Right column.
+  $variables['dfs_degree_options'] = $render('field_dfs_degree_options');
+  $variables['dfs_career_paths'] = [];
+  foreach ($node->get('field_dfs_potential_career_paths') as $item) {
+    $variables['dfs_career_paths'][] = $item->value;
+  }
+  $variables['dfs_advisor'] = (!$node->get('field_dfs_advisor')->isEmpty())
+    ? $node->get('field_dfs_advisor')->view(['label' => 'hidden', 'type' => 'entity_reference_label', 'settings' => ['link' => TRUE]])
+    : NULL;
+  $variables['dfs_advising_email'] = $val('field_dfs_advising_email');
+
+  // Social links (string fields holding full URLs).
+  $variables['dfs_social'] = [];
+  $social = [
+    'field_dfs_facebook' => 'facebook',
+    'field_dfs_instagram' => 'instagram',
+    'field_dfs_twitter' => 'twitter',
+    'field_dfs_linkedin' => 'linkedin',
+    'field_dfs_youtube' => 'youtube',
+  ];
+  foreach ($social as $field => $name) {
+    if ($url = $val($field)) {
+      $variables['dfs_social'][] = ['name' => $name, 'url' => $url];
+    }
+  }
+
+  // "Learn more" links (link fields → title + url).
+  $variables['dfs_learn_more'] = [];
+  $links = [
+    'field_dfs_department_link' => 'Department',
+    'field_dfs_corvallis_campus' => 'Corvallis Program',
+    'field_dfs_ecampus' => 'Ecampus Program',
+    'field_dfs_la_grande_campus' => 'La Grande Program',
+    'field_dfs_newport_campus' => 'Newport Program',
+    'field_dfs_cascades_campus' => 'Cascades Program',
+    'field_dfs_osu_catalog' => 'OSU Academic Catalog',
+    'field_dfs_example_4_year_plan' => 'Example 4-Year Plan',
+  ];
+  foreach ($links as $field => $default_title) {
+    if ($node->hasField($field) && !$node->get($field)->isEmpty()) {
+      $item = $node->get($field)->first();
+      try {
+        $variables['dfs_learn_more'][] = [
+          'title' => $item->title ?: $default_title,
+          'url' => Url::fromUri($item->uri)->toString(),
+        ];
+      }
+      catch (\Exception $e) {
+        // Skip malformed URIs.
+      }
+    }
+  }
+
+  // Downloadable PDF flyers.
+  $variables['dfs_pdf'] = $render('field_dfs_pdf_flyer');
+  $variables['dfs_pdf_es'] = $render('field_dfs_pdf_flyer_espanol');
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for colorbox_view_mode_formatter.
+ *
+ * The colorbox_view_modes formatter (colorbox.module) hardcodes the referenced
+ * entity's label as the lightbox caption — i.e. the anchor `title` attribute
+ * becomes the media's name (its filename). When the referenced media carries a
+ * caption, prefer field_media_caption so galleries (image_album,
+ * art_about_agriculture) show the real caption text ("Beach Farm House 1954")
+ * instead of "farm.png". Runs after colorbox's own preprocess, so this wins;
+ * media without a caption keep the default label behaviour.
+ */
+function osu_cas_multisite_preprocess_colorbox_view_mode_formatter(array &$variables) {
+  $item = $variables['item'] ?? NULL;
+  if ($item instanceof FieldableEntityInterface
+      && $item->hasField('field_media_caption')
+      && !$item->get('field_media_caption')->isEmpty()) {
+    $caption = trim((string) $item->get('field_media_caption')->value);
+    if ($caption !== '') {
+      $variables['attributes']['title'] = $caption;
+    }
+  }
+}

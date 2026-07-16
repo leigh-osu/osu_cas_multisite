@@ -1,0 +1,84 @@
+/* Degree fact sheet layout — osu_cas_multisite. Reproduces the D7 View. */
+.dfs-banner {
+  position: relative;
+  height: 300px;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-color: #ccc;
+  margin-bottom: 0;
+}
+.dfs-banner__overlay {
+  position: absolute;
+  bottom: 1.5rem;
+  left: 0;
+  max-width: 55%;
+  padding: 0.75rem 1.25rem;
+  background-color: #000;
+}
+.dfs-banner__eyebrow {
+  display: block;
+  color: #d73f09; /* OSU orange */
+  font-weight: bold;
+  font-size: 1.25rem;
+  text-transform: uppercase;
+}
+.dfs-banner__title {
+  display: block;
+  color: #fff;
+  font-size: 2rem;
+  line-height: 1.1;
+}
+.dfs-intro {
+  background-color: #d73f09;
+  color: #fff;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2rem;
+}
+.dfs-intro__header {
+  color: #fff;
+  margin-top: 0;
+}
+.dfs-intro a { color: #fff; text-decoration: underline; }
+
+.dfs-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2.5rem;
+}
+.dfs-body__left {
+  flex: 1 1 260px;
+  max-width: 320px;
+}
+.dfs-body__right {
+  flex: 3 1 420px;
+}
+.dfs-body__left img { width: 100%; height: auto; display: block; }
+
+.dfs-field-label {
+  color: #d73f09;
+  margin-top: 1.5rem;
+}
+.dfs-body__right > .dfs-field-label:first-child,
+.dfs-body__left > .dfs-field-label:first-child { margin-top: 0; }
+
+.dfs-faces { font-style: italic; }
+
+.dfs-stats { margin-top: 1.5rem; }
+.dfs-stats__heading {
+  border-bottom: 3px solid #a7aca2;
+  padding-bottom: 0.25rem;
+}
+.dfs-stat { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+.dfs-stat .osu { font-size: 2rem; color: #d73f09; }
+.dfs-stat__value { font-weight: bold; }
+
+.dfs-social { list-style: none; padding: 0; display: flex; gap: 1rem; }
+.dfs-links, .dfs-careers { padding-left: 1.25rem; }
+.dfs-pdf { margin-top: 0.5rem; }
+
+@media (max-width: 48em) {
+  .dfs-body { flex-direction: column; }
+  .dfs-body__left { max-width: none; }
+  .dfs-banner__overlay { max-width: 90%; }
+}
