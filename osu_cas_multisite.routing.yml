@@ -1,0 +1,15 @@
+osu_cas_multisite.my_profile:
+  path: '/user/my-profile'
+  defaults:
+    _controller: 'Drupal\osu_cas_multisite\Controller\MyProfileController::redirectToProfile'
+    _title: 'My OSU Profile'
+  requirements:
+    _custom_access: 'Drupal\osu_cas_multisite\Controller\MyProfileController::access'
+
+osu_cas_multisite.my_groups:
+  path: '/user/my-groups'
+  defaults:
+    _controller: 'Drupal\osu_cas_multisite\Controller\MyGroupsController::build'
+    _title: 'My Groups'
+  requirements:
+    _custom_access: 'Drupal\osu_cas_multisite\Controller\MyGroupsController::access'
