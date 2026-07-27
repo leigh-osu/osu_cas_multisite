@@ -6,7 +6,29 @@
  */
 
 use Drupal\Core\Entity\FieldableEntityInterface;
+use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Url;
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_osu_profile_edit_form.
+ *
+ * Profile owners reach this form through the basic_group-member
+ * 'update own group_node:osu_profile entity' permission. They may edit their
+ * own profile content, but not re-home the profile (the entitygroupfield
+ * Groups widget) or unpublish it. The gate cannot be 'administer nodes':
+ * ordinary members carry it via the group_content_author role. Instead, trim
+ * the form when someone edits the profile they own, unless they hold
+ * 'bypass node access' (dx_administrator / architect / manage_content) —
+ * group editors working on other people's profiles are unaffected.
+ */
+function osu_cas_multisite_form_node_osu_profile_edit_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $account = \Drupal::currentUser();
+  $node = $form_state->getFormObject()->getEntity();
+  if ($node->getOwnerId() == $account->id() && !$account->hasPermission('bypass node access')) {
+    $form['entitygroupfield']['#access'] = FALSE;
+    $form['status']['#access'] = FALSE;
+  }
+}
 
 /**
  * Implements hook_theme().
