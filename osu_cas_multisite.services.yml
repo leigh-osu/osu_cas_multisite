@@ -1,0 +1,11 @@
+services:
+  osu_cas_multisite.breadcrumb.group_menu:
+    class: Drupal\osu_cas_multisite\Breadcrumb\GroupMenuBreadcrumbBuilder
+    arguments:
+      - '@entity_type.manager'
+      - '@plugin.manager.menu.link'
+      - '@database'
+    tags:
+      # Above easy_breadcrumb (1003) so group content gets the group-aware
+      # trail; everything else falls through to easy_breadcrumb.
+      - { name: breadcrumb_builder, priority: 1010 }
