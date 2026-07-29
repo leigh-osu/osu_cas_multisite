@@ -66,6 +66,12 @@ class GroupMenuBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     if ($route_match->getRouteName() !== 'entity.node.canonical') {
       return $breadcrumb;
     }
+
+    // Domain front pages: no breadcrumb — the page is the site's top level.
+    $breadcrumb->addCacheContexts(['url.path.is_front']);
+    if (\Drupal::service('path.matcher')->isFrontPage()) {
+      return $breadcrumb;
+    }
     // Menu links and group placements are content; a rename, re-parent or
     // re-home must rebuild the trail.
     $breadcrumb->addCacheTags(['menu_link_content_list', 'group_content_list']);
@@ -107,9 +113,13 @@ class GroupMenuBreadcrumbBuilder implements BreadcrumbBuilderInterface {
     }
 
     $links = [];
-    $links[] = $landing_nid
-      ? Link::createFromRoute($group_title, 'entity.node.canonical', ['node' => $landing_nid])
-      : $group->toLink($group_title);
+    // The "Home" group is the main site itself — its name is never shown as
+    // a crumb (the trail starts at the menu ancestors instead).
+    if (strcasecmp($group_title, 'Home') !== 0) {
+      $links[] = $landing_nid
+        ? Link::createFromRoute($group_title, 'entity.node.canonical', ['node' => $landing_nid])
+        : $group->toLink($group_title);
+    }
 
     // Walk the menu ancestry (root-first), skipping the link to the page
     // itself and anything that duplicates the group crumb.
@@ -128,9 +138,8 @@ class GroupMenuBreadcrumbBuilder implements BreadcrumbBuilderInterface {
       }
     }
 
-    // Current page, unlinked — mirrors easy_breadcrumb's include_title_segment.
-    $links[] = Link::createFromRoute($node->getTitle(), '<none>');
-
+    // The current page is deliberately NOT appended — the trail shows only
+    // the path to get here (matching easy_breadcrumb's configuration).
     $breadcrumb->setLinks($links);
     return $breadcrumb;
   }
