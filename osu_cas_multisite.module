@@ -164,3 +164,29 @@ function osu_cas_multisite_preprocess_colorbox_view_mode_formatter(array &$varia
     }
   }
 }
+
+
+/**
+ * Implements hook_views_data_alter().
+ *
+ * Group support for content listings without join fan-out: a computed
+ * primary-group field on nodes (CasNodeGroups) and a select-friendly
+ * parent-group filter (CasGroupSelect).
+ */
+function osu_cas_multisite_views_data_alter(array &$data) {
+  if (isset($data['node_field_data'])) {
+    $data['node_field_data']['cas_node_groups'] = [
+      'title' => t('Primary group (computed)'),
+      'help' => t('Alphabetically first group the node is placed in; no SQL join, so rows never duplicate.'),
+      'field' => ['id' => 'cas_node_groups'],
+    ];
+  }
+  if (isset($data['node_field_data'])) {
+    $data['node_field_data']['gid_select'] = [
+      'title' => t('Parent group (dropdown)'),
+      'help' => t('Filter by parent group with an alphabetical dropdown (EXISTS subquery, no join).'),
+      'real field' => 'nid',
+      'filter' => ['id' => 'cas_group_select'],
+    ];
+  }
+}
