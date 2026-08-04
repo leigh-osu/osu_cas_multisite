@@ -1,0 +1,34 @@
+/**
+ * Bootstrap Styles pins its Content/Style tab bar with sticky top: 0, but
+ * gin's #layout-builder-modal carries 24px top padding, so the stuck bar
+ * floats 24px down with form content scrolling through the gap. Pin it
+ * flush with the dialog edge instead.
+ */
+#layout-builder-modal #bs_nav-tabs {
+  top: -24px;
+}
+
+/**
+ * Linkit's autocomplete drops into the dark modal (it attaches to the
+ * nearest .ui-front, which is #layout-builder-modal) but keeps its
+ * light-theme text: #333 titles on the #383A40 menu. Lighten the result
+ * text, restore a readable focus state (linkit's own active rule paints
+ * #bfbfbf behind inherited light text), and darken the unpublished tint.
+ */
+#layout-builder-modal .linkit-ui-autocomplete .linkit-result-line {
+  color: #f1f1f1;
+}
+
+#layout-builder-modal .linkit-ui-autocomplete .linkit-result-line--description {
+  color: #c3c7cc;
+}
+
+#layout-builder-modal .linkit-ui-autocomplete .linkit-result-line-wrapper.ui-state-active,
+#layout-builder-modal .linkit-ui-autocomplete .linkit-result-line-wrapper.ui-state-focus {
+  background: #0075ba;
+  color: #fff;
+}
+
+#layout-builder-modal .linkit-ui-autocomplete .linkit-result-line-wrapper.unpublished {
+  background: #4a3236;
+}

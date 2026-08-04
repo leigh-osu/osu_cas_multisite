@@ -3,6 +3,6 @@ type: module
 description: 'Shared helper functions and theming for the OSU CAS multisite platform (e.g. the degree fact sheet layout that D7 built inside a View).'
 package: 'OSU CAS'
 core_version_requirement: ^10 || ^11
-version: 1.3.3
+version: 1.4.0
 dependencies:
   - drupal:node

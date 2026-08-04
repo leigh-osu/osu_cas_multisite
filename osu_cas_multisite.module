@@ -190,3 +190,48 @@ function osu_cas_multisite_views_data_alter(array &$data) {
     ];
   }
 }
+
+/**
+ * Implements hook_plugin_filter_TYPE__CONSUMER_alter().
+ *
+ * paragraph_block is the landing bundle for migrated D7 paragraph bodies
+ * and is 'basic' plus migration-leftover fields — offering both in Layout
+ * Builder's "Add a new content block" list just invites the wrong pick.
+ * Existing placed paragraph_block inline blocks still render; only the
+ * create-new option disappears.
+ */
+function osu_cas_multisite_plugin_filter_block__layout_builder_alter(array &$definitions, array $extra_context) {
+  unset($definitions['inline_block:paragraph_block']);
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for details templates.
+ *
+ * Layout Builder's "Choose a block" dialog renders every category as
+ * <details open>, so the list arrives fully expanded and endless. Start
+ * them all collapsed; the dialog's filter JS still pops matching
+ * categories open while searching.
+ */
+function osu_cas_multisite_preprocess_details(array &$variables) {
+  $classes = $variables['element']['#attributes']['class'] ?? [];
+  if (in_array('js-layout-builder-category', $classes, TRUE)) {
+    unset($variables['attributes']['open']);
+  }
+}
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Attach the tab-bar fix to Layout Builder's block configure/add forms —
+ * see css/lb-modal-tabs.css for the why.
+ */
+function osu_cas_multisite_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
+  if (in_array($form_id, ['layout_builder_update_block', 'layout_builder_add_block'], TRUE)) {
+    $form['#attached']['library'][] = 'osu_cas_multisite/lb_modal_tabs';
+  }
+  // The main Layout Builder edit form (node_page_layout_builder_form etc.):
+  // guard against navigating away with unsaved layout changes.
+  if (str_ends_with($form_id, '_layout_builder_form')) {
+    $form['#attached']['library'][] = 'osu_cas_multisite/lb_unsaved_warning';
+  }
+}
