@@ -71,9 +71,32 @@
   border-bottom: 3px solid #a7aca2;
   padding-bottom: 0.25rem;
 }
-.dfs-stat { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
-.dfs-stat .osu { font-size: 2rem; color: #d73f09; }
-.dfs-stat__value { font-weight: bold; }
+/* Stats align in three shared columns (icon | number | text): the block is
+   a grid and each .dfs-stat contributes its three spans directly via
+   display: contents, so every number right-aligns against a common edge
+   and every label starts flush left of it. */
+.dfs-stats {
+  display: grid;
+  grid-template-columns: auto max-content 1fr;
+  align-items: center;
+  column-gap: 0.5rem;
+  /* 0.5em breathing room between entries on top of the base 0.5rem. */
+  row-gap: calc(0.5rem + 0.5em);
+}
+.dfs-stats__heading { grid-column: 1 / -1; }
+.dfs-stat { display: contents; }
+.dfs-stat .osu { font-size: 3rem; color: #d73f09; }
+.dfs-stat__value { font-weight: bold; justify-self: end; text-align: right; }
+/* Labels carry a thin divider against the numbers, in the same grey as the
+   heading's underline. justify-self stretch (default) keeps the rule at a
+   fixed column edge; the border spans the label's full row height. */
+.dfs-stat__label {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  border-left: 1px solid #a7aca2;
+  padding-left: 0.5rem;
+}
 
 .dfs-social { list-style: none; padding: 0; display: flex; gap: 1rem; }
 .dfs-links, .dfs-careers { padding-left: 1.25rem; }

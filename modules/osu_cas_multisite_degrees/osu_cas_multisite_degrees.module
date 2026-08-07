@@ -1,0 +1,243 @@
+<?php
+
+/**
+ * @file
+ * OSU CAS Multisite Degrees — degree fact sheet rendering.
+ */
+
+use Drupal\Core\Url;
+
+/**
+ * Implements hook_theme().
+ *
+ * Registers the degree fact sheet full-page template shipped by this module.
+ * D7 rendered degree fact sheets with a Views block full of "Global: custom
+ * text" fields (hand-written HTML + inline CSS + tokens); there was no node
+ * template. This reproduces that layout as a real node template driven by the
+ * migrated fields.
+ */
+function osu_cas_multisite_degrees_theme($existing, $type, $theme, $path) {
+  return [
+    'node__degree_fact_sheet__full' => [
+      'base hook' => 'node',
+      'template' => 'node--degree-fact-sheet--full',
+      'path' => $path . '/templates',
+    ],
+  ];
+}
+
+/**
+ * Implements hook_preprocess_HOOK() for node templates.
+ *
+ * Prepares the degree fact sheet fields into named variables for the
+ * node--degree-fact-sheet--full template. Uses each field's own formatter via
+ * ->view() for rich content, and raw values where the template needs to build
+ * custom markup (banner background, social/learn-more link lists).
+ */
+function osu_cas_multisite_degrees_preprocess_node(array &$variables) {
+  $node = $variables['node'] ?? NULL;
+  if (!$node || $node->bundle() !== 'degree_fact_sheet' || ($variables['view_mode'] ?? '') !== 'full') {
+    return;
+  }
+
+  $variables['#attached']['library'][] = 'osu_cas_multisite_degrees/degree_fact_sheet';
+
+  // Small helpers.
+  $val = fn($f) => (!$node->get($f)->isEmpty()) ? $node->get($f)->value : NULL;
+  $render = fn($f) => (!$node->get($f)->isEmpty()) ? $node->get($f)->view(['label' => 'hidden']) : NULL;
+
+  // Banner background image URL.
+  if (!$node->get('field_dfs_banner')->isEmpty() && ($file = $node->get('field_dfs_banner')->entity)) {
+    $variables['dfs_banner_url'] = \Drupal::service('file_url_generator')->generateString($file->getFileUri());
+  }
+  // Degree level labels from the merged field_dfs_level (multi-value list;
+  // the old single-string field_dfs_degree_level is gone).
+  $level_labels = [];
+  if ($node->hasField('field_dfs_level') && !$node->get('field_dfs_level')->isEmpty()) {
+    $allowed = $node->get('field_dfs_level')
+      ->getFieldDefinition()
+      ->getFieldStorageDefinition()
+      ->getSetting('allowed_values');
+    foreach ($node->get('field_dfs_level') as $item) {
+      $level_labels[] = $allowed[$item->value] ?? $item->value;
+    }
+  }
+  $variables['dfs_degree_level'] = implode(', ', $level_labels);
+
+  // Intro box (field_dfs_overview absorbed the old introduction field).
+  $variables['dfs_intro_header'] = $val('field_dfs_introduction_header');
+  $variables['dfs_intro'] = $render('field_dfs_overview');
+
+  // The D7 view had a Spanish variant (one sheet: Ciencias Agrícolas);
+  // all boilerplate strings switch on the Language field.
+  $variables['dfs_es'] = $node->hasField('field_dfs_language')
+    && $val('field_dfs_language') === 'Español';
+
+  // D7 rendered the node body below the fact-sheet view (course
+  // requirements, learning outcomes, the 4-year-plan table, etc.).
+  $variables['dfs_body'] = $render('body');
+
+  // Left column.
+  $variables['dfs_photo'] = $render('field_dfs_photo');
+  // Faces of AgSci quotes carry stray editor line breaks mid-sentence (the
+  // line-break filter would render them as <br>); collapse all newlines to
+  // spaces so the quote flows as one paragraph.
+  $variables['dfs_faces'] = NULL;
+  if (!$node->get('field_dfs_faces_of_agsci')->isEmpty()) {
+    $faces = $node->get('field_dfs_faces_of_agsci')->first();
+    $variables['dfs_faces'] = [
+      '#type' => 'processed_text',
+      '#text' => preg_replace('~\s*\R\s*~u', ' ', $faces->value),
+      '#format' => $faces->format ?? 'basic_html',
+    ];
+  }
+  $variables['dfs_num_students'] = $val('field_dfs_number_of_students');
+
+  // Right column.
+  $variables['dfs_degree_options'] = $render('field_dfs_degree_options');
+  $variables['dfs_career_paths'] = [];
+  foreach ($node->get('field_dfs_potential_career_paths') as $item) {
+    $variables['dfs_career_paths'][] = $item->value;
+  }
+  // Inline advisor link (a field render would wrap it in divs and break
+  // the sentence onto its own line).
+  $variables['dfs_advisor'] = NULL;
+  if (!$node->get('field_dfs_advisor')->isEmpty() && ($advisor = $node->get('field_dfs_advisor')->entity)) {
+    $variables['dfs_advisor'] = $advisor->toLink()->toString();
+  }
+  $variables['dfs_advising_email'] = $val('field_dfs_advising_email');
+
+  // Social links (string fields holding full URLs).
+  $variables['dfs_social'] = [];
+  $social = [
+    'field_dfs_facebook' => 'facebook',
+    'field_dfs_instagram' => 'instagram',
+    'field_dfs_twitter' => 'twitter',
+    'field_dfs_linkedin' => 'linkedin',
+    'field_dfs_youtube' => 'youtube',
+  ];
+  foreach ($social as $field => $name) {
+    if ($url = $val($field)) {
+      $variables['dfs_social'][] = ['name' => $name, 'url' => $url];
+    }
+  }
+
+  // "Learn more" links (link fields → title + url), in D7's list order.
+  // The preferred link falls back to the node title as its label, matching
+  // the D7 view; the learning-outcomes link is a plain link field.
+  $variables['dfs_learn_more'] = [];
+  $links = [
+    'field_dfs_department_link' => 'Department',
+    'field_dfs_preferred_link' => $node->label(),
+    'field_dfs_corvallis_campus' => 'Corvallis Program',
+    'field_dfs_la_grande_campus' => 'La Grande Program',
+    'field_dfs_newport_campus' => 'Newport Program',
+    'field_dfs_cascades_campus' => 'Cascades Program',
+    'field_dfs_ecampus' => 'Ecampus Program',
+    'field_dfs_osu_catalog' => 'OSU Academic Catalog',
+    'field_dfs_example_4_year_plan' => 'Example 4-Year Plan',
+    'field_dfs_learning_outcomes' => 'Learning Outcomes',
+  ];
+  foreach ($links as $field => $default_title) {
+    if ($node->hasField($field) && !$node->get($field)->isEmpty()) {
+      $item = $node->get($field)->first();
+      try {
+        $variables['dfs_learn_more'][] = [
+          'title' => $item->title ?: $default_title,
+          'url' => Url::fromUri($item->uri)->toString(),
+        ];
+      }
+      catch (\Exception $e) {
+        // Skip malformed URIs.
+      }
+    }
+  }
+
+  // Downloadable PDF flyers, labelled by language rather than filename.
+  $pdf_link = function (string $field) use ($node) {
+    if (!$node->hasField($field) || $node->get($field)->isEmpty() || !($file = $node->get($field)->entity)) {
+      return NULL;
+    }
+    return \Drupal::service('file_url_generator')->generateString($file->getFileUri());
+  };
+  $variables['dfs_pdf'] = $pdf_link('field_dfs_pdf_flyer');
+  $variables['dfs_pdf_es'] = $pdf_link('field_dfs_pdf_flyer_espanol');
+
+  // ---- Graduate variant (D7's degree_fact_sheet_graduate design) ----
+  $variables['dfs_is_graduate'] = $node->hasField('field_dfs_graduate')
+    && (bool) $node->get('field_dfs_graduate')->value;
+  $variables['dfs_levels'] = $level_labels;
+  // Degrees-offered blocks (three parallel multi-value fields migrated from
+  // D7's field_dfsg_degrees collection): title | level line + rich text.
+  $variables['dfs_degrees'] = [];
+  if ($node->hasField('field_dfs_degree_title')) {
+    $levels_text = $node->get('field_dfs_degree_level_text');
+    $descriptions = $node->get('field_dfs_degree_description');
+    foreach ($node->get('field_dfs_degree_title') as $i => $item) {
+      $description = $descriptions->get($i);
+      $has_description = $description && trim((string) $description->value) !== '';
+      $variables['dfs_degrees'][] = [
+        'title' => $item->value,
+        'level' => $levels_text->get($i)?->value,
+        'description' => $has_description ? [
+          '#type' => 'processed_text',
+          '#text' => $description->value,
+          '#format' => $description->format ?? 'full_html',
+        ] : NULL,
+      ];
+    }
+  }
+  // Multi-value plain-text lists, rendered as bullet lists like D7.
+  $variables['dfs_grad_support'] = [];
+  foreach ($node->get('field_dfs_grad_student_support') as $item) {
+    $variables['dfs_grad_support'][] = $item->value;
+  }
+  $variables['dfs_program_requirements'] = [];
+  foreach ($node->get('field_dfs_program_requirements') as $item) {
+    $variables['dfs_program_requirements'][] = $item->value;
+  }
+  $variables['dfs_alumni_spotlight'] = $render('field_dfs_alumni_spotlight');
+
+  // Icon tile row (department / level programs / catalog), matching the D7
+  // graduate sheets' band of fa-5x icon tiles.
+  $variables['dfs_grad_tiles'] = [];
+  if ($variables['dfs_is_graduate']) {
+    $tile = function (string $field, string $fallback, string $icon) use ($node) {
+      if (!$node->hasField($field) || $node->get($field)->isEmpty()) {
+        return NULL;
+      }
+      $item = $node->get($field)->first();
+      try {
+        return [
+          'title' => $item->title ?: $fallback,
+          'url' => Url::fromUri($item->uri)->toString(),
+          'icon' => $icon,
+        ];
+      }
+      catch (\Exception $e) {
+        return NULL;
+      }
+    };
+    // D7 order: department, campus program links (each with its own link
+    // title, e.g. "Corvallis Program" or "M.S./M.A. Program"), catalog.
+    $tile_fields = [
+      ['field_dfs_department_link', 'Department', 'icon-osu-mu'],
+      ['field_dfs_corvallis_campus', 'Corvallis Program', 'icon-osu-mortar-board'],
+      ['field_dfs_la_grande_campus', 'La Grande Program', 'icon-osu-mortar-board'],
+      ['field_dfs_newport_campus', 'Newport Program', 'icon-osu-mortar-board'],
+      ['field_dfs_cascades_campus', 'Cascades Program', 'icon-osu-mortar-board'],
+      ['field_dfs_ecampus', 'Ecampus Program', 'icon-osu-zoom_meeting'],
+      ['field_dfs_osu_catalog', 'OSU Academic Catalog', 'icon-osu-knowledge'],
+    ];
+    foreach ($tile_fields as [$field, $fallback, $icon]) {
+      if ($t = $tile($field, $fallback, $icon)) {
+        // The D7 view hardcodes the catalog tile's label regardless of the
+        // link title (which is often the long catalog page name).
+        if ($field === 'field_dfs_osu_catalog') {
+          $t['title'] = 'OSU Academic Catalog';
+        }
+        $variables['dfs_grad_tiles'][] = $t;
+      }
+    }
+  }
+}

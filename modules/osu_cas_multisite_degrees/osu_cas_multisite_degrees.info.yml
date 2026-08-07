@@ -1,0 +1,9 @@
+name: 'OSU CAS Multisite Degrees'
+type: module
+description: 'Degree fact sheet rendering: the full-page node template, field preprocessing and styling that D7 built inside a View.'
+package: 'OSU CAS'
+core_version_requirement: ^10 || ^11
+version: 1.5.0
+dependencies:
+  - drupal:node
+  - osu_cas_multisite:osu_cas_multisite

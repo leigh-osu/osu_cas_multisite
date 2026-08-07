@@ -1,6 +1,6 @@
 {
     "name": "leigh-osu/osu_cas_multisite",
-    "description": "Shared helpers and theming for the OSU CAS multisite platform (degree fact sheet template, gallery caption preprocess).",
+    "description": "Shared helpers and theming for the OSU CAS multisite platform; the osu_cas_multisite_degrees submodule carries the degree fact sheet rendering.",
     "type": "drupal-custom-module",
     "require": {
         "php": ">=8.1"

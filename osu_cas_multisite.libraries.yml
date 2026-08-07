@@ -1,8 +1,3 @@
-degree_fact_sheet:
-  version: 1.x
-  css:
-    component:
-      css/osu-cas-dfs.css: {}
 lb_modal_tabs:
   version: 1.x
   css:
