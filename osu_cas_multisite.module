@@ -340,6 +340,29 @@ function osu_cas_multisite_preprocess_details(array &$variables) {
 function osu_cas_multisite_form_alter(array &$form, FormStateInterface $form_state, $form_id) {
   if (in_array($form_id, ['layout_builder_update_block', 'layout_builder_add_block'], TRUE)) {
     $form['#attached']['library'][] = 'osu_cas_multisite/lb_modal_tabs';
+
+    // New accordion blocks default to p-2 padding (site standard for
+    // accordions; migrated ones get the same via CasLayoutBase). Only when
+    // no padding is stored yet, so editor choices are never overridden.
+    if ($form_id === 'layout_builder_add_block' && isset($form['ui']['tab_content']['appearance']['spacing']['padding'])) {
+      $component = $form_state->getFormObject()->getCurrentComponent();
+      $stored = $component->get('bootstrap_styles')['block_style']['padding']['class'] ?? NULL;
+      if ($component->getPluginId() === 'inline_block:osu_accordion' && !$stored) {
+        $padding_options = \Drupal::config('bootstrap_styles.settings')->get('padding');
+        // Options render as [_none, ...configured classes]; the range value
+        // is the index into that list.
+        $index = 0;
+        foreach (array_values(array_filter(array_map('trim', explode("\n", (string) $padding_options)))) as $i => $line) {
+          if (str_starts_with($line, 'p-2|')) {
+            $index = $i + 1;
+            break;
+          }
+        }
+        if ($index) {
+          $form['ui']['tab_content']['appearance']['spacing']['padding']['#default_value'] = $index;
+        }
+      }
+    }
   }
   // The main Layout Builder edit form (node_page_layout_builder_form etc.):
   // guard against navigating away with unsaved layout changes.
