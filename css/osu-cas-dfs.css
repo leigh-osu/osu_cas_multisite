@@ -18,7 +18,8 @@
 }
 .dfs-banner__eyebrow {
   display: block;
-  color: #d73f09; /* OSU orange */
+  /* Orange text is reserved for links in the D10 design. */
+  color: #fff;
   font-weight: bold;
   font-size: 1.25rem;
   text-transform: uppercase;
@@ -56,7 +57,8 @@
 .dfs-body__left img { width: 100%; height: auto; display: block; }
 
 .dfs-field-label {
-  color: #d73f09;
+  /* Orange text is reserved for links in the D10 design. */
+  color: #212529;
   margin-top: 1.5rem;
 }
 .dfs-body__right > .dfs-field-label:first-child,
@@ -82,3 +84,48 @@
   .dfs-body__left { max-width: none; }
   .dfs-banner__overlay { max-width: 90%; }
 }
+
+/* ---- Graduate variant (D7 degree_fact_sheet_graduate design) ---- */
+.dfs-rule { border: 0; border-top: 1px solid #000; margin: 1.5rem 0; }
+
+.dfs-grad-overview { display: flex; gap: 2rem; margin-top: 1.5rem; }
+.dfs-grad-overview__text { flex: 3 1 0; min-width: 0; }
+.dfs-grad-overview__degrees { flex: 2 1 0; min-width: 0; }
+.dfs-degree + .dfs-degree { margin-top: 1.25rem; }
+.dfs-node-body { margin-top: 2rem; clear: both; }
+.dfs-node-body table { max-width: 100%; overflow-x: auto; display: block; }
+.dfs-degree__meta { margin-bottom: 0.5rem; }
+.dfs-degree__sep { color: #6c757d; }
+
+.dfs-grad-tiles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 1.5rem;
+  text-align: center;
+}
+.dfs-grad-tile { flex: 1 1 10rem; max-width: 14rem; }
+.dfs-grad-tile .osu { font-size: 4.5rem; color: #212529; display: block; margin-bottom: 0.5rem; }
+.dfs-grad-tile__label { font-weight: 600; }
+.dfs-grad-tile--social { align-self: center; }
+.dfs-grad-tile--social .dfs-social { justify-content: center; margin: 0; }
+
+.dfs-grad-body { display: flex; gap: 2rem; }
+.dfs-grad-body .dfs-body__col { flex: 1 1 0; min-width: 0; }
+.dfs-grad-alumni img { max-width: 100%; height: auto; }
+
+@media (max-width: 767px) {
+  .dfs-grad-overview, .dfs-grad-body { flex-direction: column; }
+  .dfs-grad-tile { max-width: none; }
+}
+
+/* D7's dotted separators above subsequent section headings in each column. */
+.dfs-grad-body .dfs-field-label + * + .dfs-field-label,
+.dfs-grad-body .dfs-field-label ~ .dfs-field-label {
+  border-top: 3px dotted #000;
+  padding-top: 10px;
+}
+
+/* Social links render as brand icons: orange like all links. */
+.dfs-social a { color: #d73f09; font-size: 1.75rem; text-decoration: none; }
+.dfs-social a:hover { color: #212529; }

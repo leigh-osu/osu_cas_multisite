@@ -3,25 +3,133 @@
  * @file
  * Degree fact sheet full-page layout, provided by osu_cas_multisite.
  *
- * Reproduces the D7 layout (which lived in a Views block of custom-text
- * fields): a banner with an overlaid program label + title, an intro box,
- * then two columns — photo / "Faces of AgSci" / stats on the left, and
- * degree options / careers / advising / social / links / PDF on the right.
+ * One template, two D7 designs switched on dfs_is_graduate:
+ * - Undergraduate: banner, intro box, then photo/faces/stats left and
+ *   degree options / careers / advising / social / links / PDF right.
+ * - Graduate: banner, overview + degrees-offered row, icon tile band
+ *   (department / programs / catalog + social), then Graduate Student
+ *   Support & How to Apply left, Program Requirements & Alumni
+ *   Spotlight right — matching the D7 degree_fact_sheet_graduate pages.
  *
  * Variables prepared by osu_cas_multisite_preprocess_node().
  #}
-<article{{ attributes.addClass('node', 'node--type-degree-fact-sheet', 'dfs') }}>
+<article{{ attributes.addClass('node', 'node--type-degree-fact-sheet', 'dfs', dfs_is_graduate ? 'dfs--graduate' : 'dfs--undergraduate') }}>
   {{ title_prefix }}
   {{ title_suffix }}
 
   {% if dfs_banner_url %}
     <div class="dfs-banner" style="background-image: url('{{ dfs_banner_url }}');">
       <div class="dfs-banner__overlay">
-        <span class="dfs-banner__eyebrow">{{ dfs_degree_level|capitalize }} Program Fact Sheet</span>
-        <span class="dfs-banner__title">{{ label }}</span>
+        <span class="dfs-banner__eyebrow">{{ dfs_is_graduate ? 'Graduate Program Fact Sheet' : (dfs_es ? 'Hoja Informativa del Programa de Licenciatura' : 'Undergraduate Program Fact Sheet') }}</span>
+        {# node.label directly: exclude_node_title empties the label variable. #}
+        <span class="dfs-banner__title">{{ node.label }}</span>
       </div>
     </div>
   {% endif %}
+
+  {% if dfs_is_graduate %}
+
+  <div class="dfs-grad-overview">
+    <div class="dfs-grad-overview__text">
+      {{ dfs_intro }}
+    </div>
+    {% if dfs_degrees %}
+      {# Per-degree blocks from D7's field_dfsg_degrees collection: title |
+         level line, then the rich-text description. D7 shows no heading. #}
+      <div class="dfs-grad-overview__degrees">
+        {% for d in dfs_degrees %}
+          <div class="dfs-degree">
+            <p class="dfs-degree__meta"><strong>{{ d.title }}</strong>{% if d.level %} <span class="dfs-degree__sep">|</span> {{ d.level }}{% endif %}</p>
+            {{ d.description }}
+          </div>
+        {% endfor %}
+      </div>
+    {% elseif dfs_levels %}
+      <div class="dfs-grad-overview__degrees">
+        <h3 class="dfs-field-label">Degrees Offered</h3>
+        <ul class="dfs-links">
+          {% for level in dfs_levels %}<li>{{ level }}</li>{% endfor %}
+        </ul>
+      </div>
+    {% endif %}
+  </div>
+
+  {% if dfs_grad_tiles or dfs_social %}
+    <hr class="dfs-rule">
+    <div class="dfs-grad-tiles">
+      {% for tile in dfs_grad_tiles %}
+        <div class="dfs-grad-tile">
+          <span class="osu {{ tile.icon }}" aria-hidden="true"></span>
+          <div class="dfs-grad-tile__label">
+            {% if tile.url %}<a href="{{ tile.url }}">{{ tile.title }}</a>{% else %}{{ tile.title }}{% endif %}
+          </div>
+        </div>
+      {% endfor %}
+      {% if dfs_social %}
+        <div class="dfs-grad-tile dfs-grad-tile--social">
+          <ul class="dfs-social">
+            {% for s in dfs_social %}
+              <li><a href="{{ s.url }}" class="dfs-social__{{ s.name }}" target="_blank" rel="noopener" aria-label="{{ s.name|capitalize }}"><i class="fa-brands fa-{{ s.name == 'twitter' ? 'x-twitter' : s.name }}" aria-hidden="true"></i><span class="visually-hidden">{{ s.name|capitalize }}</span></a></li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+    </div>
+    <hr class="dfs-rule">
+  {% endif %}
+
+  <div class="dfs-body dfs-grad-body">
+    <div class="dfs-body__col">
+      {% if dfs_grad_support %}
+        <h3 class="dfs-field-label">Graduate Student Support</h3>
+        <ul>
+          {% for item in dfs_grad_support %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {# D7's view-generated boilerplate, verbatim. #}
+      <h3 class="dfs-field-label">How to Apply</h3>
+      <p>The online application, a downloadable application form, and contact
+        information are available from the Graduate School. You may also write
+        to the Graduate School, Oregon State University, 2900 SW Jefferson Way,
+        Corvallis, Oregon 97331; telephone them at 541-737-4881, or email at
+        <a href="mailto:graduate.school@oregonstate.edu">graduate.school@oregonstate.edu</a>.</p>
+      <p>A student wishing to be admitted to any graduate program at Oregon State
+        University must complete an application form, pay the application fee,
+        and submit photocopies of all official transcripts. International
+        students must also submit recent TOEFL scores and certify sufficient
+        funding to complete the required degree. The Office of Admissions
+        provides a more complete listing of required documents and application
+        steps. Detailed information for both domestic applicants and
+        international applicants is also available.</p>
+      {# D7 styles this as a centered button (btn btn-primary). #}
+      <p class="text-center"><a class="btn cas-button-light" href="https://graduate.oregonstate.edu/admissions">Graduate Admissions</a></p>
+      {% if dfs_pdf or dfs_pdf_es %}
+        <h3 class="dfs-field-label">Downloadable PDF of Fact Sheet</h3>
+        <ul class="dfs-links dfs-pdf">
+          {% if dfs_pdf %}<li><a href="{{ dfs_pdf }}">English</a></li>{% endif %}
+          {% if dfs_pdf_es %}<li><a href="{{ dfs_pdf_es }}">Español</a></li>{% endif %}
+        </ul>
+      {% endif %}
+    </div>
+    <div class="dfs-body__col">
+      {% if dfs_program_requirements %}
+        <h3 class="dfs-field-label">Program Requirements</h3>
+        <ul>
+          {% for item in dfs_program_requirements %}<li>{{ item }}</li>{% endfor %}
+        </ul>
+      {% endif %}
+      {% if dfs_alumni_spotlight or dfs_photo %}
+        <div class="dfs-grad-alumni">
+          <h3 class="dfs-field-label">Alumni Spotlight</h3>
+          {# D7 rendered the shared photo field inside the alumni group. #}
+          {{ dfs_photo }}
+          {{ dfs_alumni_spotlight }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {% else %}
 
   {% if dfs_intro or dfs_intro_header %}
     <div class="dfs-intro">
@@ -34,63 +142,136 @@
     <aside class="dfs-body__left">
       {{ dfs_photo }}
       {% if dfs_faces %}
-        <h3 class="dfs-field-label">Faces of AgSci</h3>
+        <h3 class="dfs-field-label">{{ dfs_es ? 'Rostros de AgSci' : 'Faces of AgSci' }}</h3>
         <div class="dfs-faces">{{ dfs_faces }}</div>
+        {% if dfs_es %}
+          {# D7's Spanish view appends this link after the quote. #}
+          <p><a href="https://agsci.oregonstate.edu">Más información</a></p>
+        {% endif %}
       {% endif %}
+      {# D7 hides the whole stats block when the per-major student count is
+         empty (minors, certificates, micro-credentials). #}
       {% if dfs_num_students %}
-        <div class="dfs-stats">
-          <h4 class="dfs-stats__heading">By the Numbers</h4>
-          <div class="dfs-stat">
-            <span class="osu icon-osu-mortar-board"></span>
-            <span class="dfs-stat__value">{{ dfs_num_students }}</span>
-            <span class="dfs-stat__label">Number of undergraduate students in this major</span>
-          </div>
+      <div class="dfs-stats">
+        {# D7 heads the stats block with the college name. #}
+        <h4 class="dfs-stats__heading">{{ dfs_es ? 'Facultad de Ciencias Agrícolas' : 'College of Agricultural Sciences' }}</h4>
+        {# College-wide numbers are D7 view boilerplate (the Spanish view
+           carries its own, older figures); only the per-major count comes
+           from the node. #}
+        <div class="dfs-stat">
+          <span class="osu icon-osu-mortar-board" aria-hidden="true"></span>
+          <span class="dfs-stat__value">{{ dfs_es ? '2,618' : '2,709' }}</span>
+          <span class="dfs-stat__label">{{ dfs_es ? 'Número total de estudiantes de licenciatura de AgSci' : 'Total number of AgSci undergraduate students' }}</span>
         </div>
+        <div class="dfs-stat">
+          <span class="osu icon-osu-mortar-board" aria-hidden="true"></span>
+          <span class="dfs-stat__value">{{ dfs_num_students }}</span>
+          <span class="dfs-stat__label">{{ dfs_es ? 'Número de estudiantes de licenciatura que se especializan' : 'Number of undergraduate students in this major' }}</span>
+        </div>
+        <div class="dfs-stat">
+          <span class="osu icon-osu-piggy-bank" aria-hidden="true"></span>
+          <span class="dfs-stat__value">{{ dfs_es ? '$500K' : '$900K' }}</span>
+          <span class="dfs-stat__label">{{ dfs_es ? 'En becas para estudiantes de Ciencias Agrícolas' : 'In scholarships for AgSci students' }}</span>
+        </div>
+        <div class="dfs-stat">
+          <span class="osu icon-osu-microscope" aria-hidden="true"></span>
+          <span class="dfs-stat__value">{{ dfs_es ? '$100M' : '$114M' }}</span>
+          <span class="dfs-stat__label">{{ dfs_es ? 'En la financiación de la investigación' : 'In funding for AgSci research each year' }}</span>
+        </div>
+      </div>
       {% endif %}
     </aside>
 
     <div class="dfs-body__right">
       {% if dfs_degree_options %}
-        <h3 class="dfs-field-label">{{ label }} Degree Options</h3>
+        <h3 class="dfs-field-label">{{ dfs_es ? 'Opciones en la Carrera de ' ~ node.label : node.label ~ ' Degree Options' }}</h3>
         {{ dfs_degree_options }}
       {% endif %}
 
+      {# D7 shows the careers heading and paragraph on every sheet; the
+         examples list only renders when the node has career paths. #}
+      <h3 class="dfs-field-label">{{ dfs_es ? 'Títulos que Pagan. Carreras que Importan.' : 'Degrees that Pay. Careers that Matter.' }}</h3>
+      {% if dfs_es %}
+        <p>Las oportunidades de empleo son abundantes para los graduados con
+          experiencia en alimentación, agricultura, recursos naturales
+          renovables o sustentabilidad ecológica. Estos conocimientos ayudan a
+          resolver los problemas más acuciantes del mundo en los ámbitos del
+          hambre mundial, la salud humana y la conservación del medio ambiente.
+          Descubre cómo puedes construir una carrera significativa que ayude a
+          mejorar el mañana.</p>
+      {% else %}
+        <p>Job opportunities are abundant for graduates with expertise in food,
+          agriculture, renewable natural resources, or ecological sustainability.
+          This expertise helps solve the world’s most pressing issues in the
+          arenas of world hunger, human health, and environmental conservation.
+          Discover how you can build a meaningful career that helps make
+          tomorrow better.</p>
+      {% endif %}
       {% if dfs_career_paths %}
-        <h3 class="dfs-field-label">Degrees that Pay. Careers that Matter.</h3>
+        <p><strong>{{ dfs_es ? 'Los Empleos Potenciales en ' ~ node.label ~ ' incluyen:' : 'Examples of career paths with a degree in ' ~ node.label ~ ' include:' }}</strong></p>
         <ul class="dfs-careers">
           {% for path in dfs_career_paths %}<li>{{ path }}</li>{% endfor %}
         </ul>
       {% endif %}
 
       {% if dfs_advisor or dfs_advising_email %}
-        <h3 class="dfs-field-label">Individualized Advising</h3>
-        <p>Advisors help students develop their course of study and connect them to
-          scholarships, campus resources, and experiential learning opportunities.
-          For {{ label }} advising, contact
-          {% if dfs_advisor %}{{ dfs_advisor }}{% endif %}{% if dfs_advising_email %}
-            <a href="mailto:{{ dfs_advising_email }}">{{ dfs_advising_email }}</a>{% endif %}.</p>
+        <h3 class="dfs-field-label">{{ dfs_es ? 'Asesoramiento Personalizado' : 'Individualized Advising' }}</h3>
+        {# D7 view boilerplate, verbatim. #}
+        {% if dfs_es %}
+          <p>Los asesores ayudan a los estudiantes a desarrollar su curso de
+            estudio. Son el enlace de los estudiantes con las becas y los
+            recursos del campus, asesoran en cuestiones de desarrollo
+            profesional y orientan a los estudiantes hacia el aprendizaje
+            experimental y las oportunidades de liderazgo que les ayudarán a
+            tener éxito en sus carreras agrícolas o empresariales después de la
+            graduación. Para preguntas acerca de la carrera de {{ node.label }}
+            póngase en contacto con
+            {% if dfs_advisor %}{{ dfs_advisor }}{% endif %}{% if dfs_advising_email %}
+              <a href="mailto:{{ dfs_advising_email }}">{{ dfs_advising_email }}</a>{% endif %}.</p>
+        {% else %}
+          <p>Advisors help students develop their course of study. They are the
+            students’ link to scholarships and campus resources, advise on matters
+            of professional development, and point students toward experiential
+            learning and leadership opportunities that will help them be
+            successful in their agricultural or business careers after graduation.
+            For {{ node.label }} advising, contact
+            {% if dfs_advisor %}{{ dfs_advisor }}{% endif %}{% if dfs_advising_email %}
+              <a href="mailto:{{ dfs_advising_email }}">{{ dfs_advising_email }}</a>{% endif %}.</p>
+        {% endif %}
       {% endif %}
 
       {% if dfs_social %}
-        <h3 class="dfs-field-label">We're Social!</h3>
+        <h3 class="dfs-field-label">{{ dfs_es ? '¡Somos sociales!' : "We're Social!" }}</h3>
+        <p>{{ dfs_es ? 'Conoce ' ~ node.label ~ ' en línea:' : 'Get to know us online:' }}</p>
         <ul class="dfs-social">
           {% for s in dfs_social %}
-            <li><a href="{{ s.url }}" class="dfs-social__{{ s.name }}" target="_blank" rel="noopener">{{ s.name|capitalize }}</a></li>
+            <li><a href="{{ s.url }}" class="dfs-social__{{ s.name }}" target="_blank" rel="noopener" aria-label="{{ s.name|capitalize }}"><i class="fa-brands fa-{{ s.name == 'twitter' ? 'x-twitter' : s.name }}" aria-hidden="true"></i><span class="visually-hidden">{{ s.name|capitalize }}</span></a></li>
           {% endfor %}
         </ul>
       {% endif %}
 
       {% if dfs_learn_more %}
-        <h3 class="dfs-field-label">Learn More</h3>
+        <h3 class="dfs-field-label">{{ dfs_es ? 'Visita:' : 'Learn More' }}</h3>
         <ul class="dfs-links">
           {% for link in dfs_learn_more %}<li><a href="{{ link.url }}">{{ link.title }}</a></li>{% endfor %}
         </ul>
       {% endif %}
 
       {% if dfs_pdf or dfs_pdf_es %}
-        <h3 class="dfs-field-label">Downloadable PDF of Fact Sheet</h3>
-        <div class="dfs-pdf">{{ dfs_pdf }}{{ dfs_pdf_es }}</div>
+        <h3 class="dfs-field-label">{{ dfs_es ? 'PDF descargable de la hoja informativa' : 'Downloadable PDF of Fact Sheet' }}</h3>
+        <ul class="dfs-links dfs-pdf">
+          {% if dfs_pdf %}<li><a href="{{ dfs_pdf }}">English</a></li>{% endif %}
+          {% if dfs_pdf_es %}<li><a href="{{ dfs_pdf_es }}">Español</a></li>{% endif %}
+        </ul>
       {% endif %}
     </div>
   </div>
+
+  {% endif %}
+
+  {# D7 rendered the node body (course requirements, tables, etc.) as the
+     plain node content below the whole fact-sheet layout. #}
+  {% if dfs_body %}
+    <div class="dfs-node-body">{{ dfs_body }}</div>
+  {% endif %}
 </article>
