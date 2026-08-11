@@ -13,3 +13,18 @@ osu_cas_multisite.my_groups:
     _title: 'My Groups'
   requirements:
     _custom_access: 'Drupal\osu_cas_multisite\Controller\MyGroupsController::access'
+
+# "Profile" tab on a user page. Resolves the profile node the account owns
+# (see UserProfileTabController) and redirects to it, so the tab behaves like
+# a link rather than rendering a second copy of the profile.
+osu_cas_multisite.user_profile_tab:
+  path: '/user/{user}/profile'
+  defaults:
+    _controller: 'Drupal\osu_cas_multisite\Controller\UserProfileTabController::redirectToProfile'
+    _title: 'Profile'
+  options:
+    parameters:
+      user:
+        type: entity:user
+  requirements:
+    _custom_access: 'Drupal\osu_cas_multisite\Controller\UserProfileTabController::access'

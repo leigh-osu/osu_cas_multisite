@@ -1,0 +1,7 @@
+# Adds "Profile" alongside View/Edit on a user page. Shown only when the
+# account owns an osu_profile node; UserProfileTabController::access() decides.
+osu_cas_multisite.user_profile_tab:
+  route_name: osu_cas_multisite.user_profile_tab
+  base_route: entity.user.canonical
+  title: 'Profile'
+  weight: 5
