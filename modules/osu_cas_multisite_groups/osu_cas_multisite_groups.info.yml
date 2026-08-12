@@ -3,7 +3,7 @@ type: module
 description: 'Group and domain support for the CAS platform: group-aware breadcrumbs, the group create-content block, views group field/filter, and the My Groups page.'
 package: 'OSU CAS'
 core_version_requirement: ^10 || ^11
-version: 1.6.0
+version: 1.7.0
 dependencies:
   - drupal:node
   - drupal:views
