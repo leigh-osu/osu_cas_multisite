@@ -14,7 +14,9 @@ use Drupal\user\ToolbarLinkBuilder;
  * destinations (OSU profile node, groups, authored content), each shown
  * only when its route grants access. Log out is kept, and Unmasquerade
  * appears while masquerading. Swapped in for user.toolbar_link_builder by
- * OsuCasMultisiteServiceProvider.
+ * OsuCasMultisiteServiceProvider. My Groups lives in the
+ * osu_cas_multisite_groups submodule; with it disabled the route lookup
+ * fails access and the link simply drops out.
  */
 class CasToolbarLinkBuilder extends ToolbarLinkBuilder {
 
@@ -28,7 +30,7 @@ class CasToolbarLinkBuilder extends ToolbarLinkBuilder {
 
     $candidates = [
       'my_profile' => ['title' => $this->t('My OSU Profile'), 'route' => 'osu_cas_multisite.my_profile'],
-      'my_groups' => ['title' => $this->t('My Groups'), 'route' => 'osu_cas_multisite.my_groups'],
+      'my_groups' => ['title' => $this->t('My Groups'), 'route' => 'osu_cas_multisite_groups.my_groups'],
       'my_content' => ['title' => $this->t('My Content'), 'route' => 'view.my_content.page_1'],
     ];
     $new = [];

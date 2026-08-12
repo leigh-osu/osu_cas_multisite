@@ -1,0 +1,54 @@
+<?php
+
+/**
+ * @file
+ * OSU CAS Multisite Groups — group and domain support for the CAS platform.
+ */
+
+use Drupal\Core\Form\FormStateInterface;
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_osu_profile_edit_form.
+ *
+ * Profile owners reach this form through the basic_group-member
+ * 'update own group_node:osu_profile entity' permission. They may edit their
+ * own profile content, but not re-home the profile (the entitygroupfield
+ * Groups widget) or unpublish it. The gate cannot be 'administer nodes':
+ * ordinary members carry it via the group_content_author role. Instead, trim
+ * the form when someone edits the profile they own, unless they hold
+ * 'bypass node access' (dx_administrator / architect / manage_content) —
+ * group editors working on other people's profiles are unaffected.
+ */
+function osu_cas_multisite_groups_form_node_osu_profile_edit_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  $account = \Drupal::currentUser();
+  $node = $form_state->getFormObject()->getEntity();
+  if ($node->getOwnerId() == $account->id() && !$account->hasPermission('bypass node access')) {
+    $form['entitygroupfield']['#access'] = FALSE;
+    $form['status']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Implements hook_views_data_alter().
+ *
+ * Group support for content listings without join fan-out: a computed
+ * primary-group field on nodes (CasNodeGroups) and a select-friendly
+ * parent-group filter (CasGroupSelect).
+ */
+function osu_cas_multisite_groups_views_data_alter(array &$data) {
+  if (isset($data['node_field_data'])) {
+    $data['node_field_data']['cas_node_groups'] = [
+      'title' => t('Primary group (computed)'),
+      'help' => t('Alphabetically first group the node is placed in; no SQL join, so rows never duplicate.'),
+      'field' => ['id' => 'cas_node_groups'],
+    ];
+  }
+  if (isset($data['node_field_data'])) {
+    $data['node_field_data']['gid_select'] = [
+      'title' => t('Parent group (dropdown)'),
+      'help' => t('Filter by parent group with an alphabetical dropdown (EXISTS subquery, no join).'),
+      'real field' => 'nid',
+      'filter' => ['id' => 'cas_group_select'],
+    ];
+  }
+}

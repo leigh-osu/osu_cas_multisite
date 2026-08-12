@@ -4,10 +4,3 @@ osu_cas_multisite.my_profile:
   route_name: osu_cas_multisite.my_profile
   menu_name: account
   weight: -5
-
-osu_cas_multisite.my_groups:
-  title: 'My Groups'
-  description: 'Groups you are a member of.'
-  route_name: osu_cas_multisite.my_groups
-  menu_name: account
-  weight: -4

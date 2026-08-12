@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\osu_cas_multisite\Plugin\views\filter;
+namespace Drupal\osu_cas_multisite_groups\Plugin\views\filter;
 
 use Drupal\views\Plugin\views\filter\InOperator;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\osu_cas_multisite\Controller;
+namespace Drupal\osu_cas_multisite_groups\Controller;
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;

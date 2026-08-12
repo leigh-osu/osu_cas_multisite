@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\osu_cas_multisite\Plugin\views\field;
+namespace Drupal\osu_cas_multisite_groups\Plugin\views\field;
 
 use Drupal\views\Plugin\views\field\FieldPluginBase;
 use Drupal\views\ResultRow;

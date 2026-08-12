@@ -1,6 +1,6 @@
 services:
-  osu_cas_multisite.breadcrumb.group_menu:
-    class: Drupal\osu_cas_multisite\Breadcrumb\GroupMenuBreadcrumbBuilder
+  osu_cas_multisite_groups.breadcrumb.group_menu:
+    class: Drupal\osu_cas_multisite_groups\Breadcrumb\GroupMenuBreadcrumbBuilder
     arguments:
       - '@entity_type.manager'
       - '@plugin.manager.menu.link'

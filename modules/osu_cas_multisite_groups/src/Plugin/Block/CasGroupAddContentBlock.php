@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\osu_cas_multisite\Plugin\Block;
+namespace Drupal\osu_cas_multisite_groups\Plugin\Block;
 
 use Drupal\Core\Block\BlockBase;
 use Drupal\Core\Cache\CacheableMetadata;

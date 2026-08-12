@@ -1,0 +1,7 @@
+osu_cas_multisite_groups.my_groups:
+  path: '/user/my-groups'
+  defaults:
+    _controller: 'Drupal\osu_cas_multisite_groups\Controller\MyGroupsController::build'
+    _title: 'My Groups'
+  requirements:
+    _custom_access: 'Drupal\osu_cas_multisite_groups\Controller\MyGroupsController::access'

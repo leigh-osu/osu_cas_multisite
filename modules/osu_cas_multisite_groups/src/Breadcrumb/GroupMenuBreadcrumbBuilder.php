@@ -1,6 +1,6 @@
 <?php
 
-namespace Drupal\osu_cas_multisite\Breadcrumb;
+namespace Drupal\osu_cas_multisite_groups\Breadcrumb;
 
 use Drupal\Core\Breadcrumb\Breadcrumb;
 use Drupal\Core\Breadcrumb\BreadcrumbBuilderInterface;
