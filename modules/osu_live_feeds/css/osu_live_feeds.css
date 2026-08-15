@@ -1,16 +1,23 @@
-/* Feed source link: RSS icon top-right of the item list, as in D7 larch. */
+/* Feed source link: white RSS glyph on a beaver-orange chip, top-right of
+   the item list, as in D7 larch. */
 .live-feed__source {
   float: right;
   display: inline-flex;
-  width: 1.05rem;
-  height: 1.05rem;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0.28rem;
   margin: 0.3rem 0 0.5rem 0.75rem;
-  color: #d73f09;
+  background-color: #d73f09;
+  border-radius: 0.25rem;
+  color: #fff;
 }
 
 .live-feed__source:hover,
 .live-feed__source:focus {
-  color: #000;
+  background-color: #000;
+  color: #fff;
 }
 
 .live-feed__source svg {
