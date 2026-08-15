@@ -1,0 +1,4 @@
+feed:
+  css:
+    component:
+      css/osu_live_feeds.css: {  }

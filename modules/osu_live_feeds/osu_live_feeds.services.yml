@@ -1,0 +1,4 @@
+services:
+  osu_live_feeds.fetcher:
+    class: Drupal\osu_live_feeds\FeedFetcher
+    arguments: ['@http_client', '@cache.data', '@logger.factory']

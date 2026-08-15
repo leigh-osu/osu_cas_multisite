@@ -1,0 +1,62 @@
+<?php
+
+/**
+ * @file
+ * OSU Live Feeds — external RSS/Atom feeds rendered live (D7 live_feeds).
+ */
+
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
+use Drupal\node\NodeInterface;
+use Drupal\osu_live_feeds\FeedFetcher;
+
+/**
+ * Implements hook_theme().
+ */
+function osu_live_feeds_theme(): array {
+  return [
+    'osu_live_feeds_items' => [
+      'variables' => [
+        'heading' => NULL,
+        'items' => [],
+        'feed_url' => NULL,
+      ],
+    ],
+  ];
+}
+
+/**
+ * Builds the live item list render array for a feed node.
+ *
+ * Shared by the per-feed block and the feed node's own page. The feed title
+ * heading renders inside the template (as D7's block subject did) so layout
+ * placements can keep label_display off.
+ */
+function osu_live_feeds_build_items(NodeInterface $node): array {
+  $url = $node->get('field_feed_url')->uri;
+  if (!$url) {
+    return [];
+  }
+  $limit = (int) ($node->get('field_feed_items')->value ?: 5);
+  $items = \Drupal::service('osu_live_feeds.fetcher')->fetch($url, $limit);
+  return [
+    '#theme' => 'osu_live_feeds_items',
+    '#heading' => $node->getTitle(),
+    '#items' => $items,
+    '#feed_url' => $url,
+    '#attached' => ['library' => ['osu_live_feeds/feed']],
+    '#cache' => ['max-age' => FeedFetcher::CACHE_OK],
+  ];
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for node.
+ *
+ * The feed node's own page shows the live items, like D7's
+ * live_feeds_node_view().
+ */
+function osu_live_feeds_node_view(array &$build, NodeInterface $node, EntityViewDisplayInterface $display, string $view_mode): void {
+  if ($node->bundle() === 'feed' && in_array($view_mode, ['full', 'default'], TRUE)) {
+    $build['live_feed_items'] = osu_live_feeds_build_items($node) + ['#weight' => 10];
+    $build['live_feed_items']['#heading'] = NULL;
+  }
+}

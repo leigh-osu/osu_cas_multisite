@@ -1,0 +1,44 @@
+langcode: en
+status: true
+dependencies:
+  module:
+    - node
+    - options
+id: node.field_feed_type
+field_name: field_feed_type
+entity_type: node
+type: list_string
+settings:
+  allowed_values:
+    -
+      value: generic_parser
+      label: 'Generic RSS/Atom'
+    -
+      value: osu_wordpress
+      label: 'OSU WordPress blog'
+    -
+      value: osu_news
+      label: 'OSU News'
+    -
+      value: osu_announcements
+      label: 'OSU Announcements'
+    -
+      value: osu_events
+      label: 'OSU Events'
+    -
+      value: osu_localist
+      label: 'OSU Localist'
+    -
+      value: gcal_feed
+      label: 'Google Calendar'
+    -
+      value: beaver_jobs
+      label: 'Beaver Jobs'
+  allowed_values_function: ''
+module: options
+locked: false
+cardinality: 1
+translatable: true
+indexes: {  }
+persist_with_no_fields: false
+custom_storage: false

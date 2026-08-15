@@ -1,0 +1,18 @@
+langcode: en
+status: true
+dependencies:
+  config:
+    - field.field.node.feed.field_feed_items
+    - field.field.node.feed.field_feed_type
+    - field.field.node.feed.field_feed_url
+    - node.type.feed
+id: node.feed.default
+targetEntityType: node
+bundle: feed
+mode: default
+content: {  }
+hidden:
+  field_feed_items: true
+  field_feed_type: true
+  field_feed_url: true
+  links: true

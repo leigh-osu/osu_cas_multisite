@@ -1,0 +1,11 @@
+name: 'OSU Live Feeds'
+type: module
+description: 'External RSS/Atom feeds rendered live: the Feed content type and a per-feed block, the D10 counterpart of D7 live_feeds.'
+package: 'OSU CAS'
+core_version_requirement: ^10 || ^11
+version: 1.9.0
+dependencies:
+  - drupal:node
+  - drupal:link
+  - drupal:options
+  - osu_cas_multisite:osu_cas_multisite

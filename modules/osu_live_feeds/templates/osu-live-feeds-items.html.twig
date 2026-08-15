@@ -1,0 +1,40 @@
+{#
+/**
+ * @file
+ * Live feed items: linked titles with date and trimmed summary.
+ *
+ * Variables:
+ * - heading: optional feed heading (the D7 block subject), null on node pages.
+ * - items: arrays of title, url, timestamp, summary.
+ * - feed_url: the source feed URL.
+ */
+#}
+<div class="live-feed">
+  {% if feed_url %}
+    <a class="live-feed__source" href="{{ feed_url }}">
+      <span class="visually-hidden">{{ heading ? heading ~ ' feed'|t : 'Feed'|t }}</span>
+      {# RSS glyph (Font Awesome Free 6, CC BY 4.0). #}
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" aria-hidden="true"><path d="M0 64C0 46.3 14.3 32 32 32c229.8 0 416 186.2 416 416c0 17.7-14.3 32-32 32s-32-14.3-32-32C384 253.6 226.4 96 32 96C14.3 96 0 81.7 0 64zM0 416a64 64 0 1 1 128 0A64 64 0 1 1 0 416zM32 160c159.1 0 288 128.9 288 288c0 17.7-14.3 32-32 32s-32-14.3-32-32c0-123.7-100.3-224-224-224c-17.7 0-32-14.3-32-32s14.3-32 32-32z"/></svg>
+    </a>
+  {% endif %}
+  {% if heading %}
+    <h2 class="live-feed__heading">{{ heading }}</h2>
+  {% endif %}
+  {% if items %}
+    <ul class="live-feed__items list-unstyled">
+      {% for item in items %}
+        <li class="live-feed__item">
+          <a class="live-feed__title" href="{{ item.url }}">{{ item.title }}</a>
+          {% if item.timestamp %}
+            <div class="live-feed__date">{{ item.timestamp|format_date('medium') }}</div>
+          {% endif %}
+          {% if item.summary %}
+            <div class="live-feed__summary">{{ item.summary }}</div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="live-feed__empty">{% trans %}No items to show right now.{% endtrans %}</p>
+  {% endif %}
+</div>
