@@ -6,6 +6,9 @@
  */
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
+use Drupal\group\Entity\GroupRelationship;
+use Drupal\node\NodeInterface;
 
 /**
  * Implements hook_form_FORM_ID_alter() for node_osu_profile_edit_form.
@@ -26,6 +29,100 @@ function osu_cas_multisite_groups_form_node_osu_profile_edit_form_alter(array &$
     $form['entitygroupfield']['#access'] = FALSE;
     $form['status']['#access'] = FALSE;
   }
+}
+
+/**
+ * Implements hook_node_access_records_alter().
+ *
+ * Members-only content, mirroring D7's og_access "group content visibility":
+ * a node flagged field_group_private carries view grants only for the groups
+ * it is placed in (realm cas_group_private, gid = group id), replacing the
+ * Domain Access records that would otherwise grant anonymous view. Because
+ * enforcement rides the node-grants system, Views listings, search, menu
+ * links and sitemaps hide these nodes from non-members automatically.
+ * Unpublished nodes keep their original records — domain_unpublished already
+ * restricts those correctly.
+ */
+function osu_cas_multisite_groups_node_access_records_alter(array &$grants, NodeInterface $node): void {
+  if (!$node->isPublished()
+    || !$node->hasField('field_group_private')
+    || empty($node->get('field_group_private')->value)) {
+    return;
+  }
+  $records = [];
+  foreach (GroupRelationship::loadByEntity($node) as $relationship) {
+    $gid = (int) $relationship->getGroupId();
+    $records[$gid] = [
+      'realm' => 'cas_group_private',
+      'gid' => $gid,
+      'grant_view' => 1,
+      'grant_update' => 0,
+      'grant_delete' => 0,
+      'langcode' => $node->language()->getId(),
+    ];
+  }
+  // A flagged node in no group at all stays visible only to accounts that
+  // bypass node access — the D7-faithful reading of "members only" with no
+  // members. That needs an explicit locking record: returning no records
+  // would make core write its public 'all' fallback. gid 0 is granted to
+  // nobody (hook_node_grants only ever returns real group ids).
+  if (!$records) {
+    $records[0] = [
+      'realm' => 'cas_group_private',
+      'gid' => 0,
+      'grant_view' => 1,
+      'grant_update' => 0,
+      'grant_delete' => 0,
+      'langcode' => $node->language()->getId(),
+    ];
+  }
+  $grants = array_values($records);
+}
+
+/**
+ * Implements hook_node_access().
+ *
+ * The grants above govern listings, search and menus, but a full node view
+ * consults entity-access hooks first — and gnode answers "allowed" whenever
+ * the group's anonymous/outsider role may view group content, which
+ * short-circuits the grants table entirely. Forbidden beats allowed, so for
+ * a flagged node this denies everyone who is not a member of one of its
+ * groups. Accounts with 'bypass node access' never reach node-access hooks.
+ */
+function osu_cas_multisite_groups_node_access(NodeInterface $node, string $op, AccountInterface $account): \Drupal\Core\Access\AccessResultInterface {
+  $neutral = \Drupal\Core\Access\AccessResult::neutral()->addCacheableDependency($node);
+  if ($op !== 'view'
+    || !$node->hasField('field_group_private')
+    || empty($node->get('field_group_private')->value)) {
+    return $neutral;
+  }
+  $member_gids = osu_cas_multisite_groups_node_grants($account, 'view')['cas_group_private'] ?? [];
+  foreach (GroupRelationship::loadByEntity($node) as $relationship) {
+    if (in_array((int) $relationship->getGroupId(), $member_gids, TRUE)) {
+      return $neutral->cachePerUser();
+    }
+  }
+  return \Drupal\Core\Access\AccessResult::forbidden('Group members only.')
+    ->addCacheableDependency($node)
+    ->cachePerUser();
+}
+
+/**
+ * Implements hook_node_grants().
+ *
+ * The matching grants for cas_group_private: each authenticated user is
+ * granted the ids of the groups they are a member of. Accounts with 'bypass
+ * node access' (System Administrators, Architects) never reach this hook.
+ */
+function osu_cas_multisite_groups_node_grants(AccountInterface $account, string $op): array {
+  if ($op !== 'view' || !$account->isAuthenticated()) {
+    return [];
+  }
+  $gids = [];
+  foreach (\Drupal::service('group.membership_loader')->loadByUser($account) as $membership) {
+    $gids[] = (int) $membership->getGroupRelationship()->getGroupId();
+  }
+  return $gids ? ['cas_group_private' => $gids] : [];
 }
 
 /**
