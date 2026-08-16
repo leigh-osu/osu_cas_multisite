@@ -25,3 +25,23 @@
   height: 100%;
   fill: currentColor;
 }
+
+/* Item image: 75px thumb floated left of the title, as in D7 osu_news. */
+.live-feed__item {
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+/* 1px grey rule between items (not after the last). */
+.live-feed__item + .live-feed__item {
+  border-top: 1px solid #ccc;
+  padding-top: 0.75rem;
+}
+
+.live-feed__image {
+  float: left;
+  width: 75px;
+  height: 75px;
+  object-fit: cover;
+  margin: 0.25rem 0.75rem 0.25rem 0;
+}

@@ -1,7 +1,8 @@
 {#
 /**
  * @file
- * Live feed items: linked titles with date and trimmed summary.
+ * Live feed items, in D7 live_feeds' shape: h3 title links, M j, Y dates,
+ * summary with a "Read full story." link.
  *
  * Variables:
  * - heading: optional feed heading (the D7 block subject), null on node pages.
@@ -21,19 +22,20 @@
     <h2 class="live-feed__heading">{{ heading }}</h2>
   {% endif %}
   {% if items %}
-    <ul class="live-feed__items list-unstyled">
-      {% for item in items %}
-        <li class="live-feed__item">
-          <a class="live-feed__title" href="{{ item.url }}">{{ item.title }}</a>
-          {% if item.timestamp %}
-            <div class="live-feed__date">{{ item.timestamp|format_date('medium') }}</div>
-          {% endif %}
-          {% if item.summary %}
-            <div class="live-feed__summary">{{ item.summary }}</div>
-          {% endif %}
-        </li>
-      {% endfor %}
-    </ul>
+    {% for item in items %}
+      <div class="live-feed__item">
+        {% if item.image %}
+          <img class="live-feed__image" src="{{ item.image }}" alt="" width="75" height="75" loading="lazy" />
+        {% endif %}
+        <h3 class="live-feed__title"><a href="{{ item.url }}">{{ item.title }}</a></h3>
+        {% if item.timestamp %}
+          <div class="live-feed__date">{{ item.timestamp|format_date('custom', 'M j, Y') }}</div>
+        {% endif %}
+        {% if item.summary %}
+          <div class="live-feed__summary">{{ item.summary }} <a href="{{ item.url }}">{% trans %}Continue reading{% endtrans %}</a></div>
+        {% endif %}
+      </div>
+    {% endfor %}
   {% else %}
     <p class="live-feed__empty">{% trans %}No items to show right now.{% endtrans %}</p>
   {% endif %}

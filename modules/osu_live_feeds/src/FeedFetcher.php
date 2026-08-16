@@ -109,13 +109,40 @@ class FeedFetcher {
       if ($date === '') {
         $date = (string) ($node->children('http://purl.org/dc/elements/1.1/')->date ?? '');
       }
-      $summary = (string) ($node->description ?? $node->summary ?? $node->children('http://purl.org/rss/1.0/modules/content/')->encoded ?? '');
-      $summary = trim(html_entity_decode(strip_tags($summary), ENT_QUOTES | ENT_HTML5));
+      $raw_summary = (string) ($node->description ?? $node->summary ?? $node->children('http://purl.org/rss/1.0/modules/content/')->encoded ?? '');
+      $summary = trim(html_entity_decode(strip_tags($raw_summary), ENT_QUOTES | ENT_HTML5));
+      // Item image, like D7's osu_news parser: the RSS enclosure first, then
+      // Media RSS (WordPress), then the first inline image in the summary.
+      $image = '';
+      if (isset($node->enclosure['url'])) {
+        $type = (string) $node->enclosure['type'];
+        if ($type === '' || str_starts_with($type, 'image/')) {
+          $image = trim((string) $node->enclosure['url']);
+        }
+      }
+      if ($image === '') {
+        $media = $node->children('http://search.yahoo.com/mrss/');
+        foreach (['thumbnail', 'content'] as $tag) {
+          if (isset($media->{$tag}['url'])) {
+            $image = trim((string) $media->{$tag}['url']);
+            break;
+          }
+        }
+      }
+      if ($image === '') {
+        // WordPress puts a text-only excerpt in description; the images live
+        // in content:encoded. Scan both for the first inline image.
+        $html_sources = $raw_summary . (string) ($node->children('http://purl.org/rss/1.0/modules/content/')->encoded ?? '');
+        if (preg_match('/<img[^>]+src=["\']([^"\']+)["\']/i', $html_sources, $m)) {
+          $image = html_entity_decode($m[1], ENT_QUOTES | ENT_HTML5);
+        }
+      }
       $items[] = [
         'title' => trim((string) $node->title) ?: $link,
         'url' => $link,
         'timestamp' => $date !== '' ? (strtotime($date) ?: NULL) : NULL,
         'summary' => $summary !== '' ? Unicode::truncate($summary, 280, TRUE, TRUE) : '',
+        'image' => str_starts_with($image, 'http') ? $image : '',
       ];
     }
     return $items;
