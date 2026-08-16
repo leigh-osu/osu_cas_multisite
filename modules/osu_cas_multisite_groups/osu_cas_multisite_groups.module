@@ -29,6 +29,35 @@ function osu_cas_multisite_groups_form_node_osu_profile_edit_form_alter(array &$
     $form['entitygroupfield']['#access'] = FALSE;
     $form['status']['#access'] = FALSE;
   }
+  _osu_cas_multisite_groups_hide_profile_domain_fields($form, $account);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for node_osu_profile_form.
+ *
+ * The add form gets the same domain-field trim as the edit form.
+ */
+function osu_cas_multisite_groups_form_node_osu_profile_form_alter(array &$form, FormStateInterface $form_state, string $form_id): void {
+  _osu_cas_multisite_groups_hide_profile_domain_fields($form, \Drupal::currentUser());
+}
+
+/**
+ * Hides profile domain fields from everyone but admins.
+ *
+ * Profiles are directory content sent to all affiliates (D7 parity, set by
+ * migration and field default), so their domain assignment is bookkeeping
+ * that only System Administrators / Architects ('bypass node access') should
+ * see or change.
+ */
+function _osu_cas_multisite_groups_hide_profile_domain_fields(array &$form, $account): void {
+  if ($account->hasPermission('bypass node access')) {
+    return;
+  }
+  foreach (['field_domain_access', 'field_domain_all_affiliates', 'field_domain_source'] as $field) {
+    if (isset($form[$field])) {
+      $form[$field]['#access'] = FALSE;
+    }
+  }
 }
 
 /**

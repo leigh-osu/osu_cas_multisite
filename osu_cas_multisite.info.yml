@@ -3,6 +3,6 @@ type: module
 description: 'Shared helper functions and theming for the OSU CAS multisite platform (Layout Builder UX, account links, profile tab). Group and domain support lives in the osu_cas_multisite_groups submodule.'
 package: 'OSU CAS'
 core_version_requirement: ^10 || ^11
-version: 1.9.2
+version: 1.10.0
 dependencies:
   - drupal:node
