@@ -1,0 +1,10 @@
+name: 'OSU CAS Weather'
+type: module
+description: 'Weather station tables (Malheur, Hyslop): a block that renders the weather_daily / weather_monthly views for a station and period.'
+package: 'OSU CAS'
+core_version_requirement: ^10 || ^11
+version: 1.13.0
+dependencies:
+  - drupal:node
+  - drupal:views
+  - osu_cas_multisite:osu_cas_multisite

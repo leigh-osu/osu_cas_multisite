@@ -178,3 +178,22 @@ function osu_cas_multisite_groups_views_data_alter(array &$data) {
     ];
   }
 }
+
+/**
+ * Implements hook_theme().
+ */
+function osu_cas_multisite_groups_theme(array $existing, string $type, string $theme, string $path): array {
+  return [
+    // The group footer card (CasGroupFooterBlock): columns is a keyed subset
+    // of map / contact / info / col4, each already a render array except
+    // contact (address parts, email, phone, hours, social link list).
+    'cas_group_footer' => [
+      'variables' => [
+        'group' => NULL,
+        'columns' => [],
+        'column_count' => 0,
+        'attributes' => [],
+      ],
+    ],
+  ];
+}

@@ -1,4 +1,8 @@
 services:
+  osu_cas_multisite_groups.current_group:
+    class: Drupal\osu_cas_multisite_groups\CurrentGroup
+    arguments:
+      - '@current_route_match'
   osu_cas_multisite_groups.breadcrumb.group_menu:
     class: Drupal\osu_cas_multisite_groups\Breadcrumb\GroupMenuBreadcrumbBuilder
     arguments:

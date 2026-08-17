@@ -1,0 +1,73 @@
+{#
+/**
+ * @file
+ * The group footer: a group's contact card above the site footer.
+ *
+ * Available variables:
+ * - group: the group entity.
+ * - columns: keyed subset of:
+ *   - map: processed_text render array (embedded map).
+ *   - contact: { address: {name, address, address2, city, state, zip},
+ *     email, phone, hours (render array), social: [{label, icon, url}] }.
+ *   - info: processed_text render array (additional information links).
+ *   - col4: processed_text render array (fourth column HTML).
+ * - column_count: how many of the above are present.
+ * - attributes: wrapper attributes.
+ */
+#}
+{% set c = columns.contact %}
+<div{{ attributes.addClass('cas-group-footer__inner', 'cas-group-footer--cols-' ~ column_count) }}>
+  <div class="container">
+    <div class="row gy-4">
+      {% if columns.map %}
+        <div class="col-12 col-md cas-group-footer__map">
+          {{ columns.map }}
+        </div>
+      {% endif %}
+      {% if c %}
+        <div class="col-12 col-md cas-group-footer__contact">
+          {% if c.address %}
+            <p class="cas-group-footer__address">
+              {% if c.address.name %}<strong>{{ c.address.name }}</strong><br>{% endif %}
+              {% if c.address.address %}{{ c.address.address }}<br>{% endif %}
+              {% if c.address.address2 %}{{ c.address.address2 }}<br>{% endif %}
+              {% if c.address.city or c.address.state or c.address.zip %}
+                {{ c.address.city }}{% if c.address.city and (c.address.state or c.address.zip) %},{% endif %}
+                {{ c.address.state }} {{ c.address.zip }}
+              {% endif %}
+            </p>
+          {% endif %}
+          {% if c.email or c.phone %}
+            <p class="cas-group-footer__reach">
+              {% if c.email %}<a href="mailto:{{ c.email }}">{{ 'Send e-mail'|t }}</a><br>{% endif %}
+              {% if c.phone %}<strong><em>{{ 'Phone:'|t }}</em></strong> {{ c.phone }}{% endif %}
+            </p>
+          {% endif %}
+          {% if c.hours %}
+            <div class="cas-group-footer__hours">
+              <strong>{{ 'Hours of Operation:'|t }}</strong>
+              {{ c.hours }}
+            </div>
+          {% endif %}
+          {% if c.social %}
+            <p class="cas-group-footer__social social-links">
+              {% for link in c.social %}
+                <a href="{{ link.url }}" title="{{ link.label }}"><span aria-hidden="true" class="{{ link.icon }} fa-2x me-2"></span><span class="visually-hidden">{{ link.label }}</span></a>
+              {% endfor %}
+            </p>
+          {% endif %}
+        </div>
+      {% endif %}
+      {% if columns.info %}
+        <div class="col-12 col-md cas-group-footer__info">
+          {{ columns.info }}
+        </div>
+      {% endif %}
+      {% if columns.col4 %}
+        <div class="col-12 col-md cas-group-footer__col4">
+          {{ columns.col4 }}
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>

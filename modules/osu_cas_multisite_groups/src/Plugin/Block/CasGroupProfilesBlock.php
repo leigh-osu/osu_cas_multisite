@@ -43,6 +43,10 @@ class CasGroupProfilesBlock extends BlockBase implements ContainerFactoryPluginI
     return [
       'display' => 'list',
       'membership_types' => [],
+      'term' => NULL,
+      'grad_accept' => [],
+      'all_groups' => FALSE,
+      'exposed_filter' => 'none',
       'group_override' => NULL,
     ];
   }
@@ -74,6 +78,40 @@ class CasGroupProfilesBlock extends BlockBase implements ContainerFactoryPluginI
       '#options' => $options,
       '#default_value' => $this->configuration['membership_types'],
     ];
+    $form['term'] = [
+      '#type' => 'entity_autocomplete',
+      '#target_type' => 'taxonomy_term',
+      '#title' => $this->t('Limit to a term'),
+      '#description' => $this->t('Only people whose profile carries this term (any vocabulary), e.g. an FW division.'),
+      '#default_value' => $this->configuration['term']
+        ? $this->entityTypeManager->getStorage('taxonomy_term')->load($this->configuration['term'])
+        : NULL,
+    ];
+    $grad_field = \Drupal\field\Entity\FieldStorageConfig::loadByName('node', 'field_profile_fac_accept_grad');
+    $form['grad_accept'] = [
+      '#type' => 'checkboxes',
+      '#title' => $this->t('Accepting graduate students for'),
+      '#description' => $this->t('Only people who accept graduate students for these programs. Leave unchecked to not filter.'),
+      '#options' => $grad_field ? $grad_field->getSetting('allowed_values') : [],
+      '#default_value' => $this->configuration['grad_accept'],
+    ];
+    $form['exposed_filter'] = [
+      '#type' => 'select',
+      '#title' => $this->t('Visitor filter'),
+      '#description' => $this->t('Show visitors a filter form above the list.'),
+      '#options' => [
+        'none' => $this->t('None'),
+        'directory_division' => $this->t('Division select'),
+        'directory_division_courtesy' => $this->t('Division select (courtesy)'),
+        'directory_names' => $this->t('Name search'),
+      ],
+      '#default_value' => $this->configuration['exposed_filter'],
+    ];
+    $form['all_groups'] = [
+      '#type' => 'checkbox',
+      '#title' => $this->t('Draw from every group'),
+      '#default_value' => $this->configuration['all_groups'],
+    ];
     $form['group_override'] = [
       '#type' => 'entity_autocomplete',
       '#target_type' => 'group',
@@ -92,6 +130,10 @@ class CasGroupProfilesBlock extends BlockBase implements ContainerFactoryPluginI
   public function blockSubmit($form, FormStateInterface $form_state) {
     $this->configuration['display'] = $form_state->getValue('display');
     $this->configuration['membership_types'] = array_values(array_filter($form_state->getValue('membership_types')));
+    $this->configuration['term'] = $form_state->getValue('term') ?: NULL;
+    $this->configuration['grad_accept'] = array_values(array_filter($form_state->getValue('grad_accept')));
+    $this->configuration['all_groups'] = (bool) $form_state->getValue('all_groups');
+    $this->configuration['exposed_filter'] = $form_state->getValue('exposed_filter') ?: 'none';
     $this->configuration['group_override'] = $form_state->getValue('group_override') ?: NULL;
   }
 
@@ -99,16 +141,32 @@ class CasGroupProfilesBlock extends BlockBase implements ContainerFactoryPluginI
    * {@inheritDoc}
    */
   public function build() {
+    $display = $this->configuration['display'];
+    $exposed = $this->configuration['exposed_filter'] ?? 'none';
+    if ($exposed !== 'none' && $display === 'list') {
+      $display = $exposed;
+    }
     $view = Views::getView('profiles_group_membership');
-    if (!$view || !$view->access($this->configuration['display'])) {
+    if (!$view || !$view->access($display)) {
       return [];
     }
     // No group override: NULL lets the argument default (group of the
-    // current page) resolve it, matching D7's og_context behavior.
-    $gid = $this->configuration['group_override'] ?: NULL;
-    $tids = implode('+', $this->configuration['membership_types']);
-    $args = $tids === '' ? [$gid] : [$gid, $tids];
-    $build = $view->buildRenderable($this->configuration['display'], $args);
+    // current page) resolve it, matching D7's og_context behavior; 'all'
+    // spans every group (D7 views without an og argument).
+    $gid = !empty($this->configuration['all_groups'])
+      ? 'all'
+      : ($this->configuration['group_override'] ?: NULL);
+    $types = implode('+', $this->configuration['membership_types']) ?: 'all';
+    $term = $this->configuration['term'] ?: 'all';
+    $grad = implode('+', $this->configuration['grad_accept'] ?? []) ?: 'all';
+    // Positional arguments; trailing 'all' placeholders hit each argument's
+    // exception value and are ignored.
+    $args = [$gid, $types, $term, $grad];
+    while (count($args) > 1 && end($args) === 'all') {
+      array_pop($args);
+    }
+    $view->setDisplay($display);
+    $build = $view->buildRenderable($display, $args);
     $build['#cache']['contexts'][] = 'route';
     return $build;
   }
