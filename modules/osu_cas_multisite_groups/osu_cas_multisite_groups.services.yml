@@ -1,4 +1,14 @@
 services:
+  # Group builds group.relation_handler.access_control.group_node for us (see
+  # GroupServiceProvider) and expects decorators; it even forces shared: false
+  # on anything decorating a handler. This one lets the subject of a profile
+  # edit it — see ProfileSubjectAccessControl for why a hook cannot.
+  osu_cas_multisite_groups.relation_handler.access_control.group_node:
+    class: Drupal\osu_cas_multisite_groups\Plugin\Group\RelationHandler\ProfileSubjectAccessControl
+    decorates: group.relation_handler.access_control.group_node
+    arguments:
+      - '@osu_cas_multisite_groups.relation_handler.access_control.group_node.inner'
+
   osu_cas_multisite_groups.current_group:
     class: Drupal\osu_cas_multisite_groups\CurrentGroup
     arguments:

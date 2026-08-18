@@ -5,11 +5,51 @@
  * OSU CAS Multisite — shared helpers and theming for the CAS platform.
  */
 
+use Drupal\Core\Access\AccessResult;
+use Drupal\Core\Access\AccessResultInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
 use Drupal\views\Views;
+
+/**
+ * Implements hook_node_access().
+ *
+ * Lets a person edit their own profile. field_profile_user names the account a
+ * profile describes, and the field help promises that account can edit it —
+ * but nothing enforced that. Editing worked only because every linked account
+ * happened to also be the node author, so core's "edit own content" carried
+ * it. The moment an editor creates a profile on someone else's behalf, which
+ * is exactly what the field exists for, the author and the subject differ and
+ * the subject could not touch their own page.
+ *
+ * Only 'update': deletion stays with the author and administrators. A neutral
+ * result leaves every other rule intact, and an explicit forbid elsewhere
+ * (unpublished access, moderation state transitions) still wins over the
+ * allow, since core only grants access when nothing forbids it.
+ */
+function osu_cas_multisite_node_access(NodeInterface $node, string $op, AccountInterface $account): AccessResultInterface {
+  $neutral = AccessResult::neutral();
+  if ($op !== 'update' || $node->bundle() !== 'osu_profile' || $account->isAnonymous()) {
+    return $neutral;
+  }
+  // Vary on both: the answer changes if the field is repointed, and it is
+  // different for every user looking at the same profile.
+  $neutral->addCacheableDependency($node)->cachePerUser();
+  if (!$node->hasField('field_profile_user')) {
+    return $neutral;
+  }
+  foreach ($node->get('field_profile_user') as $item) {
+    if ((int) $item->target_id === (int) $account->id()) {
+      return AccessResult::allowed()
+        ->addCacheableDependency($node)
+        ->cachePerUser();
+    }
+  }
+  return $neutral;
+}
 
 /**
  * The four listings a person profile carries.
