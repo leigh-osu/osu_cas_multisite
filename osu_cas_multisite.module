@@ -5,8 +5,134 @@
  * OSU CAS Multisite — shared helpers and theming for the CAS platform.
  */
 
+use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\node\NodeInterface;
+use Drupal\views\Views;
+
+/**
+ * The four listings a person profile carries.
+ *
+ * D7 rendered these as viewfield fields inside the profile (my_biblio|block,
+ * image_gallery|block_3, news_items_larch|block_18, video_view|block_7). D10
+ * has no viewfield, so they arrive as extra fields instead: that keeps them
+ * placeable in Manage Display and, unlike a block placement, lets them sit
+ * inside the profile's own accordion groups where D7 had them.
+ *
+ * Each view display is argument-bound to the profile node, and the argument is
+ * passed explicitly below rather than read from the route, so the listings are
+ * correct wherever the profile is rendered.
+ *
+ * @see osu_cas_multisite_entity_extra_field_info()
+ * @see osu_cas_multisite_node_view()
+ */
+function osu_cas_multisite_profile_listings(): array {
+  return [
+    'listing_publications' => [
+      'label' => t('My Publications'),
+      'description' => t('Publications that name this profile (osu_publications: Profile Related Publications).'),
+      'view' => 'osu_publications',
+      'display' => 'block_1',
+      'weight' => 30,
+    ],
+    'listing_images' => [
+      'label' => t('My Images'),
+      'description' => t('Image albums that name this profile (image_galleries: My Images).'),
+      'view' => 'image_galleries',
+      'display' => 'profile',
+      'weight' => 31,
+    ],
+    'listing_news' => [
+      'label' => t('My News Articles'),
+      'description' => t('Stories that name this profile (news_items_by_group: My News).'),
+      'view' => 'news_items_by_group',
+      'display' => 'profile',
+      'weight' => 32,
+    ],
+    'listing_videos' => [
+      'label' => t('My Videos'),
+      'description' => t('Videos that name this profile (videos: My Videos).'),
+      'view' => 'videos',
+      'display' => 'profile',
+      'weight' => 33,
+    ],
+  ];
+}
+
+/**
+ * Implements hook_entity_extra_field_info().
+ *
+ * Offers the four profile listings in Manage Display for osu_profile. They
+ * start hidden; core.entity_view_display.node.osu_profile.full places them.
+ */
+function osu_cas_multisite_entity_extra_field_info() {
+  $extra = [];
+  foreach (osu_cas_multisite_profile_listings() as $key => $listing) {
+    $extra['node']['osu_profile']['display'][$key] = [
+      'label' => $listing['label'],
+      'description' => $listing['description'],
+      'weight' => $listing['weight'],
+      'visible' => FALSE,
+    ];
+  }
+  return $extra;
+}
+
+/**
+ * Implements hook_ENTITY_TYPE_view() for nodes.
+ *
+ * Renders whichever of the four listings the display places. The view is
+ * executed here rather than handed over as a lazy '#type' => view element so
+ * that an empty listing can be dropped entirely: a profile with no videos
+ * should not carry an empty "My Videos" heading, and field_group only folds
+ * away a group whose children all produced nothing. The views themselves keep
+ * their empty text, so a block placed anywhere else still explains itself.
+ */
+function osu_cas_multisite_node_view(array &$build, NodeInterface $node, EntityViewDisplayInterface $display, $view_mode) {
+  if ($node->bundle() !== 'osu_profile') {
+    return;
+  }
+  foreach (osu_cas_multisite_profile_listings() as $key => $listing) {
+    if (!$display->getComponent($key)) {
+      continue;
+    }
+    $view = Views::getView($listing['view']);
+    if (!$view || !$view->access($listing['display'])) {
+      continue;
+    }
+    $view->setDisplay($listing['display']);
+    $view->setArguments([$node->id()]);
+    $view->preExecute();
+    $view->execute();
+    if (empty($view->result)) {
+      continue;
+    }
+    $short = str_replace('listing_', '', $key);
+    $build[$key] = [
+      '#type' => 'container',
+      '#attributes' => [
+        // Same shape as a real above-label field, so the listings pick up the
+        // profile's existing label typography without any new CSS.
+        'class' => [
+          'field',
+          'field--name-' . str_replace('_', '-', $key),
+          'field--label-above',
+          'cas-profile-listing',
+          'cas-profile-listing--' . $short,
+        ],
+      ],
+      '#weight' => $display->getComponent($key)['weight'] ?? $listing['weight'],
+      'label' => [
+        '#type' => 'html_tag',
+        '#tag' => 'div',
+        '#value' => $listing['label'],
+        '#attributes' => ['class' => ['field__label', 'fw-bold']],
+      ],
+      'content' => $view->render(),
+    ];
+  }
+}
 
 /**
  * Implements hook_preprocess_HOOK() for colorbox_view_mode_formatter.
