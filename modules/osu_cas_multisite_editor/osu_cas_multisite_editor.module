@@ -1,0 +1,25 @@
+<?php
+
+/**
+ * @file
+ * CKEditor configuration for the CAS platform.
+ */
+
+use Drupal\osu_cas_multisite_editor\Plugin\CKEditorPlugin\CasButtons;
+
+/**
+ * Implements hook_ckeditor_plugin_info_alter().
+ *
+ * Swaps the button picker for the CAS one. osu_ckeditor_plugins is an upstream
+ * osu-wams package, so it is not edited here; repointing the plugin class is
+ * the documented way to change what it loads, and it leaves the upstream
+ * module free to move on.
+ *
+ * @see \Drupal\osu_cas_multisite_editor\Plugin\CKEditorPlugin\CasButtons
+ */
+function osu_cas_multisite_editor_ckeditor_plugin_info_alter(array &$plugins) {
+  if (isset($plugins['osu_ckeditor_plugins_osu_buttons'])) {
+    $plugins['osu_ckeditor_plugins_osu_buttons']['class'] = CasButtons::class;
+    $plugins['osu_ckeditor_plugins_osu_buttons']['provider'] = 'osu_cas_multisite_editor';
+  }
+}

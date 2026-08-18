@@ -1,0 +1,12 @@
+name: 'OSU CAS Multisite Editor'
+type: module
+description: 'CKEditor configuration for the CAS platform: toolbars, styles and the text formats editors work in.'
+package: 'OSU CAS'
+core_version_requirement: ^10 || ^11
+version: 1.0.1
+dependencies:
+  - drupal:editor
+  - drupal:filter
+  - ckeditor:ckeditor
+  - osu_ckeditor_plugins:osu_ckeditor_plugins
+  - osu_cas_multisite:osu_cas_multisite
