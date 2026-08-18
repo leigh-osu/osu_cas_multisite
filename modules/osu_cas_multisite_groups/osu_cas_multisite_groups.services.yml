@@ -13,6 +13,21 @@ services:
     class: Drupal\osu_cas_multisite_groups\CurrentGroup
     arguments:
       - '@current_route_match'
+      - '@domain.negotiator'
+      - '@config.storage'
+      - '@entity_type.manager'
+      - '@database'
+
+  # The group context the header menu uses. Group's own context falls back to
+  # an arbitrary group membership on routes that have no group; this falls back
+  # to the domain's default group instead. Blocks opt in by context_mapping, so
+  # nothing else changes.
+  osu_cas_multisite_groups.group_display_context:
+    class: Drupal\osu_cas_multisite_groups\ContextProvider\GroupDisplayContext
+    arguments:
+      - '@osu_cas_multisite_groups.current_group'
+    tags:
+      - { name: context_provider }
   osu_cas_multisite_groups.breadcrumb.group_menu:
     class: Drupal\osu_cas_multisite_groups\Breadcrumb\GroupMenuBreadcrumbBuilder
     arguments:
