@@ -1,0 +1,64 @@
+{#
+/**
+ * @file
+ * The members' workspace on a group page: Create Content and Group Content.
+ *
+ * Available variables:
+ * - create_links: render array of create-content links (may be empty).
+ * - content_view: render array of the group's content listing, or null when
+ *   the viewer is not a member of this group.
+ *
+ * Bootstrap's tab component drives this (manzanita loads madrone/bootstrap
+ * site-wide). With only one tab available the tablist is skipped entirely
+ * rather than rendered as a single lonely tab.
+ *
+ * @see \Drupal\osu_cas_multisite_groups\Plugin\Block\CasGroupAddContentBlock
+ */
+#}
+{% set has_tabs = create_links and content_view %}
+<div class="cas-group-workspace">
+
+  {% if has_tabs %}
+    <ul class="cas-group-workspace__tablist nav nav-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active"
+                id="cas-group-tab-create"
+                data-bs-toggle="tab"
+                data-bs-target="#cas-group-pane-create"
+                type="button"
+                role="tab"
+                aria-controls="cas-group-pane-create"
+                aria-selected="true">{{ 'Create Content'|t }}</button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link"
+                id="cas-group-tab-content"
+                data-bs-toggle="tab"
+                data-bs-target="#cas-group-pane-content"
+                type="button"
+                role="tab"
+                aria-controls="cas-group-pane-content"
+                aria-selected="false">{{ 'Group Content'|t }}</button>
+      </li>
+    </ul>
+  {% endif %}
+
+  <div class="cas-group-workspace__panes{{ has_tabs ? ' tab-content' : '' }}">
+    {% if create_links %}
+      <div class="cas-group-workspace__pane{{ has_tabs ? ' tab-pane show active' : '' }}"
+           id="cas-group-pane-create"
+           {% if has_tabs %}role="tabpanel" aria-labelledby="cas-group-tab-create" tabindex="0"{% endif %}>
+        {{ create_links }}
+      </div>
+    {% endif %}
+
+    {% if content_view %}
+      <div class="cas-group-workspace__pane{{ has_tabs ? ' tab-pane' : '' }}"
+           id="cas-group-pane-content"
+           {% if has_tabs %}role="tabpanel" aria-labelledby="cas-group-tab-content" tabindex="0"{% endif %}>
+        {{ content_view }}
+      </div>
+    {% endif %}
+  </div>
+
+</div>

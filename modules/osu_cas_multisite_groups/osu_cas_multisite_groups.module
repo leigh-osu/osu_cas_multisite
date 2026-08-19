@@ -209,6 +209,14 @@ function osu_cas_multisite_groups_theme(array $existing, string $type, string $t
         'attributes' => [],
       ],
     ],
+    // The members' workspace on a group page (CasGroupAddContentBlock):
+    // create-content links and, for members, the group's content listing.
+    'cas_group_workspace' => [
+      'variables' => [
+        'create_links' => NULL,
+        'content_view' => NULL,
+      ],
+    ],
     // The /dashboard page (DashboardController). See the controller for the
     // shape of each variable.
     'cas_dashboard' => [

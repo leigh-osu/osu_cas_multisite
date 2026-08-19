@@ -38,3 +38,13 @@ services:
       # Above easy_breadcrumb (1003) so group content gets the group-aware
       # trail; everything else falls through to easy_breadcrumb.
       - { name: breadcrumb_builder, priority: 1010 }
+
+  # Anonymous visitors asking for /group/N get the unit's public home page
+  # instead of a 403.
+  osu_cas_multisite_groups.anonymous_group_redirect:
+    class: Drupal\osu_cas_multisite_groups\EventSubscriber\AnonymousGroupRedirect
+    arguments:
+      - '@current_user'
+      - '@entity_type.manager'
+    tags:
+      - { name: event_subscriber }
