@@ -48,3 +48,16 @@ services:
       - '@entity_type.manager'
     tags:
       - { name: event_subscriber }
+
+  # Grants full group permissions to holders of 'administer all cas groups'.
+  # Group consults only group roles, so site administrators are outsiders in
+  # groups they have not joined; this restores an override without giving
+  # anyone 195 memberships.
+  osu_cas_multisite_groups.group_override_calculator:
+    class: Drupal\osu_cas_multisite_groups\Access\CasGroupOverrideCalculator
+    arguments:
+      - '@entity_type.manager'
+    tags:
+      # Ahead of Group's own calculators (-100, -50) so the admin item is in
+      # place before they add their scoped roles.
+      - { name: flexible_permission_calculator, priority: -10 }

@@ -49,3 +49,19 @@
 .cas-dashboard__pane .views-element-container {
   overflow-x: auto;
 }
+
+/* The group workspace reuses the dashboard's tab styling; these are its own. */
+.cas-group-workspace__panes {
+  padding-top: 1rem;
+}
+
+.cas-group-workspace__empty {
+  color: inherit;
+  opacity: 0.75;
+  margin: 0;
+}
+
+/* The listing table is wide; let it scroll rather than the page. */
+.cas-group-workspace__pane .views-element-container {
+  overflow-x: auto;
+}

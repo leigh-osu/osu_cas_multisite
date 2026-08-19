@@ -4,61 +4,78 @@
  * The members' workspace on a group page: Create Content and Group Content.
  *
  * Available variables:
- * - create_links: render array of create-content links (may be empty).
+ * - create_links: render array of create-content links, or null when the
+ *   viewer may not create anything here.
  * - content_view: render array of the group's content listing, or null when
- *   the viewer is not a member of this group.
+ *   the viewer may not see it.
+ *
+ * Both tabs are always rendered, even when a pane has nothing in it. An empty
+ * pane with a label explains itself; a missing tab just leaves the reader
+ * wondering what they are looking at, and with one pane there was no heading
+ * naming the listing at all.
  *
  * Bootstrap's tab component drives this (manzanita loads madrone/bootstrap
- * site-wide). With only one tab available the tablist is skipped entirely
- * rather than rendered as a single lonely tab.
+ * site-wide). Hidden panes stay in the DOM, so the view's AJAX pager keeps
+ * working in the inactive tab.
  *
  * @see \Drupal\osu_cas_multisite_groups\Plugin\Block\CasGroupAddContentBlock
  */
 #}
-{% set has_tabs = create_links and content_view %}
+{# Open on the tab that has something in it. #}
+{% set create_active = create_links is not empty %}
 <div class="cas-group-workspace">
 
-  {% if has_tabs %}
-    <ul class="cas-group-workspace__tablist nav nav-tabs" role="tablist">
-      <li class="nav-item" role="presentation">
-        <button class="nav-link active"
-                id="cas-group-tab-create"
-                data-bs-toggle="tab"
-                data-bs-target="#cas-group-pane-create"
-                type="button"
-                role="tab"
-                aria-controls="cas-group-pane-create"
-                aria-selected="true">{{ 'Create Content'|t }}</button>
-      </li>
-      <li class="nav-item" role="presentation">
-        <button class="nav-link"
-                id="cas-group-tab-content"
-                data-bs-toggle="tab"
-                data-bs-target="#cas-group-pane-content"
-                type="button"
-                role="tab"
-                aria-controls="cas-group-pane-content"
-                aria-selected="false">{{ 'Group Content'|t }}</button>
-      </li>
-    </ul>
-  {% endif %}
+  <ul class="cas-group-workspace__tablist nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link{{ create_active ? ' active' }}"
+              id="cas-group-tab-create"
+              data-bs-toggle="tab"
+              data-bs-target="#cas-group-pane-create"
+              type="button"
+              role="tab"
+              aria-controls="cas-group-pane-create"
+              aria-selected="{{ create_active ? 'true' : 'false' }}">{{ 'Create Content'|t }}</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link{{ create_active ? '' : ' active' }}"
+              id="cas-group-tab-content"
+              data-bs-toggle="tab"
+              data-bs-target="#cas-group-pane-content"
+              type="button"
+              role="tab"
+              aria-controls="cas-group-pane-content"
+              aria-selected="{{ create_active ? 'false' : 'true' }}">{{ 'Group Content'|t }}</button>
+    </li>
+  </ul>
 
-  <div class="cas-group-workspace__panes{{ has_tabs ? ' tab-content' : '' }}">
-    {% if create_links %}
-      <div class="cas-group-workspace__pane{{ has_tabs ? ' tab-pane show active' : '' }}"
-           id="cas-group-pane-create"
-           {% if has_tabs %}role="tabpanel" aria-labelledby="cas-group-tab-create" tabindex="0"{% endif %}>
+  <div class="cas-group-workspace__panes tab-content">
+    <div class="cas-group-workspace__pane tab-pane fade{{ create_active ? ' show active' }}"
+         id="cas-group-pane-create"
+         role="tabpanel"
+         aria-labelledby="cas-group-tab-create"
+         tabindex="0">
+      {% if create_links %}
         {{ create_links }}
-      </div>
-    {% endif %}
+      {% else %}
+        <p class="cas-group-workspace__empty">
+          {{ 'You do not have permission to create content in this group.'|t }}
+        </p>
+      {% endif %}
+    </div>
 
-    {% if content_view %}
-      <div class="cas-group-workspace__pane{{ has_tabs ? ' tab-pane' : '' }}"
-           id="cas-group-pane-content"
-           {% if has_tabs %}role="tabpanel" aria-labelledby="cas-group-tab-content" tabindex="0"{% endif %}>
+    <div class="cas-group-workspace__pane tab-pane fade{{ create_active ? '' : ' show active' }}"
+         id="cas-group-pane-content"
+         role="tabpanel"
+         aria-labelledby="cas-group-tab-content"
+         tabindex="0">
+      {% if content_view %}
         {{ content_view }}
-      </div>
-    {% endif %}
+      {% else %}
+        <p class="cas-group-workspace__empty">
+          {{ "You do not have permission to see this group's content."|t }}
+        </p>
+      {% endif %}
+    </div>
   </div>
 
 </div>

@@ -1,0 +1,4 @@
+'administer all cas groups':
+  title: 'Administer every group, without joining it'
+  description: 'Grants full permissions in every group of every type. Group ignores site permissions by design, so without this an administrator who is not a member of a group can only view it. Equivalent to the admin group role in all groups at once.'
+  restrict access: true

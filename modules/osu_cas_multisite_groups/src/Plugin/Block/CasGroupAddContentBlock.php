@@ -135,10 +135,18 @@ class CasGroupAddContentBlock extends BlockBase implements ContainerFactoryPlugi
       ] + $items;
     }
 
-    // The listing is for members of this group only.
+    // The listing is for this group's own people: its members, plus anyone who
+    // can already see every node on the site anyway. Membership alone was too
+    // narrow — group roles are scoped, so a site administrator who is not a
+    // member of a given group resolves to `outsider` there and saw nothing at
+    // all. 'bypass node access' is the honest predicate: hiding a listing of
+    // nodes from someone who can read all of those nodes protects nothing.
+    // Deliberately not 'administer nodes', which the 412 group content authors
+    // hold and which would open every group's listing to all of them.
     $listing = NULL;
     $cache->addCacheTags(['group_content_list']);
-    if ($this->membershipLoader->load($group, \Drupal::currentUser())) {
+    $account = \Drupal::currentUser();
+    if ($this->membershipLoader->load($group, $account) || $account->hasPermission('bypass node access')) {
       $listing = views_embed_view('group_content_listing', 'default', $group->id());
     }
 

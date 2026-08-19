@@ -184,6 +184,14 @@ function osu_cas_multisite_groups_views_data_alter(array &$data) {
     ];
   }
   if (isset($data['node_field_data'])) {
+    $data['node_field_data']['cas_group_nodes'] = [
+      'title' => t('Nodes in a group (contextual)'),
+      'help' => t('Limit nodes to one group by EXISTS subquery, so node access still applies and rows never duplicate.'),
+      'real field' => 'nid',
+      'argument' => ['id' => 'cas_group_nodes'],
+    ];
+  }
+  if (isset($data['node_field_data'])) {
     $data['node_field_data']['gid_select'] = [
       'title' => t('Parent group (dropdown)'),
       'help' => t('Filter by parent group with an alphabetical dropdown (EXISTS subquery, no join).'),

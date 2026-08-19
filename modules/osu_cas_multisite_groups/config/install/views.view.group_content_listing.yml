@@ -2,15 +2,15 @@ langcode: en
 status: true
 dependencies:
   module:
-    - group
     - node
+    - osu_cas_multisite_groups
 id: group_content_listing
 label: 'Group Content'
 module: views
 description: "Nodes placed in a group, for the group's members workspace."
 tag: ''
-base_table: group_relationship_field_data
-base_field: id
+base_table: node_field_data
+base_field: nid
 display:
   default:
     id: default
@@ -24,7 +24,7 @@ display:
           id: nid
           table: node_field_data
           field: nid
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -48,7 +48,7 @@ display:
           id: type
           table: node_field_data
           field: type
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -71,7 +71,7 @@ display:
           id: title
           table: node_field_data
           field: title
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -94,7 +94,7 @@ display:
           id: edit_node
           table: node
           field: edit_node
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -116,7 +116,7 @@ display:
           id: created
           table: node_field_data
           field: created
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -150,7 +150,7 @@ display:
           id: changed
           table: node_field_data
           field: changed
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -234,16 +234,14 @@ display:
           tokenize: false
       sorts: {  }
       arguments:
-        gid:
-          id: gid
-          table: group_relationship_field_data
-          field: gid
+        cas_group_nodes:
+          id: cas_group_nodes
+          table: node_field_data
+          field: cas_group_nodes
           relationship: none
           group_type: group
           admin_label: ''
-          entity_type: group_relationship
-          entity_field: gid
-          plugin_id: group_id
+          plugin_id: cas_group_nodes
           default_action: default
           exception:
             value: ''
@@ -274,7 +272,7 @@ display:
           id: title
           table: node_field_data
           field: title
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -314,7 +312,7 @@ display:
           id: type
           table: node_field_data
           field: type
-          relationship: gc__node
+          relationship: none
           group_type: group
           admin_label: ''
           entity_type: node
@@ -340,21 +338,6 @@ display:
               authenticated: authenticated
             reduce: false
           is_grouped: false
-        plugin_id:
-          id: plugin_id
-          table: group_relationship_field_data
-          field: plugin_id
-          relationship: none
-          group_type: group
-          admin_label: ''
-          entity_type: group_relationship
-          entity_field: plugin_id
-          plugin_id: string
-          operator: starts
-          value: 'group_node:'
-          group: 1
-          exposed: false
-          is_grouped: false
       style:
         type: table
         options:
@@ -370,6 +353,13 @@ display:
             changed: changed
           default: changed
           info:
+            nid:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
             type:
               sortable: true
               default_sort_order: asc
@@ -391,21 +381,14 @@ display:
               separator: ''
               empty_column: false
               responsive: ''
-            changed:
+            created:
               sortable: true
               default_sort_order: desc
               align: ''
               separator: ''
               empty_column: false
               responsive: ''
-            nid:
-              sortable: true
-              default_sort_order: asc
-              align: ''
-              separator: ''
-              empty_column: false
-              responsive: ''
-            created:
+            changed:
               sortable: true
               default_sort_order: desc
               align: ''
@@ -424,16 +407,7 @@ display:
       query:
         type: views_query
         options: {  }
-      relationships:
-        gc__node:
-          id: gc__node
-          table: group_relationship_field_data
-          field: gc__node
-          relationship: none
-          group_type: group
-          admin_label: Content
-          plugin_id: group_content_to_entity
-          required: true
+      relationships: {  }
       use_ajax: true
       display_extenders: {  }
     cache_metadata:
@@ -444,4 +418,5 @@ display:
         - route
         - url
         - url.query_args
+        - 'user.node_grants:view'
       tags: {  }
