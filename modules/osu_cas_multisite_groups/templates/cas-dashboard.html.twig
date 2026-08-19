@@ -1,0 +1,86 @@
+{#
+/**
+ * @file
+ * The signed-in user's dashboard (/dashboard).
+ *
+ * Available variables:
+ * - display_name: the account's display name.
+ * - account_link: Url to the user's account page.
+ * - profile_link: Url to the profile node they own, or null.
+ * - site_roles: list of sitewide role labels, locked roles excluded.
+ * - groups_view: render array for the embedded My Groups view.
+ * - content_view: render array for the embedded My Content view.
+ *
+ * The tabs are Bootstrap's own component (data-bs-toggle="tab"), which
+ * manzanita loads site-wide via madrone/bootstrap. Hidden panes stay in the
+ * DOM, so each view's AJAX pager keeps working in the inactive tab.
+ *
+ * @see \Drupal\osu_cas_multisite_groups\Controller\DashboardController
+ */
+#}
+<div class="cas-dashboard">
+
+  <section class="cas-dashboard__identity">
+    <h2 class="cas-dashboard__name">{{ display_name }}</h2>
+    <ul class="cas-dashboard__links">
+      {% if profile_link %}
+        <li><a href="{{ profile_link }}">{{ 'View my profile'|t }}</a></li>
+      {% endif %}
+      <li><a href="{{ account_link }}">{{ 'Account settings'|t }}</a></li>
+    </ul>
+  </section>
+
+  <section class="cas-dashboard__roles">
+    <h3>{{ 'My roles on this site'|t }}</h3>
+    {% if site_roles %}
+      <ul class="cas-dashboard__role-list">
+        {% for role in site_roles %}
+          <li>{{ role }}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p>{{ 'You have no roles beyond signed-in access.'|t }}</p>
+    {% endif %}
+  </section>
+
+  <ul class="cas-dashboard__tablist nav nav-tabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active"
+              id="cas-dashboard-tab-groups"
+              data-bs-toggle="tab"
+              data-bs-target="#cas-dashboard-pane-groups"
+              type="button"
+              role="tab"
+              aria-controls="cas-dashboard-pane-groups"
+              aria-selected="true">{{ 'My groups'|t }}</button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link"
+              id="cas-dashboard-tab-content"
+              data-bs-toggle="tab"
+              data-bs-target="#cas-dashboard-pane-content"
+              type="button"
+              role="tab"
+              aria-controls="cas-dashboard-pane-content"
+              aria-selected="false">{{ 'My content'|t }}</button>
+    </li>
+  </ul>
+
+  <div class="cas-dashboard__panes tab-content">
+    <div class="cas-dashboard__pane tab-pane show active"
+         id="cas-dashboard-pane-groups"
+         role="tabpanel"
+         aria-labelledby="cas-dashboard-tab-groups"
+         tabindex="0">
+      {{ groups_view }}
+    </div>
+    <div class="cas-dashboard__pane tab-pane"
+         id="cas-dashboard-pane-content"
+         role="tabpanel"
+         aria-labelledby="cas-dashboard-tab-content"
+         tabindex="0">
+      {{ content_view }}
+    </div>
+  </div>
+
+</div>

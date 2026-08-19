@@ -7,6 +7,7 @@
 
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
 use Drupal\group\Entity\GroupRelationship;
 use Drupal\node\NodeInterface;
 
@@ -165,8 +166,21 @@ function osu_cas_multisite_groups_views_data_alter(array &$data) {
   if (isset($data['node_field_data'])) {
     $data['node_field_data']['cas_node_groups'] = [
       'title' => t('Primary group (computed)'),
-      'help' => t('Alphabetically first group the node is placed in; no SQL join, so rows never duplicate.'),
-      'field' => ['id' => 'cas_node_groups'],
+      'help' => t('Alphabetically first group the node is placed in; a correlated subquery rather than a join, so rows never duplicate and the column stays click-sortable.'),
+      'field' => [
+        'id' => 'cas_node_groups',
+        'click sortable' => TRUE,
+      ],
+    ];
+  }
+  if (isset($data['group_relationship_field_data'])) {
+    $data['group_relationship_field_data']['cas_membership_roles'] = [
+      'title' => t('Membership roles'),
+      'help' => t("The roles this membership carries, including synchronized ones. group_relationship__group_roles ships no views data, so the roles are read through the membership API instead."),
+      'field' => [
+        'id' => 'cas_membership_roles',
+        'click sortable' => FALSE,
+      ],
     ];
   }
   if (isset($data['node_field_data'])) {
@@ -195,5 +209,46 @@ function osu_cas_multisite_groups_theme(array $existing, string $type, string $t
         'attributes' => [],
       ],
     ],
+    // The /dashboard page (DashboardController). See the controller for the
+    // shape of each variable.
+    'cas_dashboard' => [
+      'variables' => [
+        'display_name' => '',
+        'account_link' => NULL,
+        'profile_link' => NULL,
+        'site_roles' => [],
+        'groups_view' => NULL,
+        'content_view' => NULL,
+      ],
+    ],
   ];
+}
+
+/**
+ * Implements hook_user_login().
+ *
+ * Lands users on their dashboard after signing in. Setting 'destination'
+ * rather than returning a response keeps every login path working the same
+ * way: the CAS ServiceController and core's UserLoginForm both defer to
+ * Drupal's RedirectResponseSubscriber, which honours this parameter.
+ *
+ * A destination already on the request means the user was going somewhere
+ * specific — a protected link that bounced them through login — so it is left
+ * alone. Everything else lands on the dashboard, including the one-time login
+ * link, which core otherwise sends to the account form: CAS owns passwords
+ * here (cas.settings restrict_password_management), so there is nothing to set
+ * on that form and no reason to strand anyone there.
+ */
+function osu_cas_multisite_groups_user_login($account): void {
+  $request = \Drupal::request();
+  $destination = $request->query->get('destination') ?? $request->request->get('destination');
+
+  // A destination pointing back into the login flow would bounce the user
+  // straight back out of it, so it counts as no destination at all.
+  if (is_string($destination) && $destination !== ''
+    && !preg_match('#^/?user/(login|reset|password)#', $destination)) {
+    return;
+  }
+
+  $request->query->set('destination', Url::fromRoute('osu_cas_multisite_groups.dashboard')->toString());
 }

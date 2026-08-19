@@ -1,3 +1,13 @@
+osu_cas_multisite_groups.dashboard:
+  path: '/dashboard'
+  defaults:
+    _controller: 'Drupal\osu_cas_multisite_groups\Controller\DashboardController::build'
+    _title: 'My Dashboard'
+  requirements:
+    _user_is_logged_in: 'TRUE'
+
+# Kept for bookmarks and old links: the dashboard now carries the group list,
+# so this route is no longer in the account menu.
 osu_cas_multisite_groups.my_groups:
   path: '/user/my-groups'
   defaults:

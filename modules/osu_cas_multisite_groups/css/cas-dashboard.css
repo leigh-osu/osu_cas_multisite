@@ -1,0 +1,51 @@
+/**
+ * @file
+ * Dashboard layout.
+ *
+ * Bootstrap carries the tabs and tables (manzanita is a Bootstrap theme and
+ * loads madrone/bootstrap site-wide). These rules only cover the spacing
+ * Bootstrap has no opinion about — nothing here restyles .nav-tabs, whose
+ * active state manzanita already defines.
+ */
+
+.cas-dashboard__identity {
+  margin-bottom: 1.5rem;
+}
+
+.cas-dashboard__links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0.25rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cas-dashboard__roles {
+  margin-bottom: 2rem;
+}
+
+.cas-dashboard__role-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cas-dashboard__role-list li {
+  border: 1px solid currentColor;
+  border-radius: 2px;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.875rem;
+}
+
+.cas-dashboard__panes {
+  padding-top: 1rem;
+}
+
+/* The tables inside each pane are wide; let them scroll rather than the page. */
+.cas-dashboard__pane .views-element-container {
+  overflow-x: auto;
+}

@@ -1,0 +1,11 @@
+dashboard:
+  version: 1.x
+  css:
+    component:
+      css/cas-dashboard.css: { }
+  dependencies:
+    # The dashboard tabs are Bootstrap's own component. manzanita is a
+    # Bootstrap sub-theme of madrone and loads this library site-wide, but
+    # declaring it here makes the requirement explicit and guarantees the tab
+    # JS is on the page even if that ever changes.
+    - madrone/bootstrap
