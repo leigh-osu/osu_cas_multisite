@@ -173,6 +173,22 @@ function osu_cas_multisite_groups_views_data_alter(array &$data) {
       ],
     ];
   }
+  if (isset($data['groups_field_data'])) {
+    $data['groups_field_data']['cas_my_groups'] = [
+      'title' => t('My groups (or all, when administering every group)'),
+      'help' => t("Limits the listing to the current user's groups; holders of 'administer all cas groups' see every group."),
+      'real field' => 'id',
+      'filter' => ['id' => 'cas_my_groups'],
+    ];
+    $data['groups_field_data']['cas_my_group_roles'] = [
+      'title' => t('My roles in this group'),
+      'help' => t('The roles the current user holds in the group on this row, read through the membership API.'),
+      'field' => [
+        'id' => 'cas_my_group_roles',
+        'click sortable' => TRUE,
+      ],
+    ];
+  }
   if (isset($data['group_relationship_field_data'])) {
     $data['group_relationship_field_data']['cas_membership_roles'] = [
       'title' => t('Membership roles'),
