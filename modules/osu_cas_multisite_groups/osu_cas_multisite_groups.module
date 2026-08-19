@@ -6,6 +6,7 @@
  */
 
 use Drupal\Core\Form\FormStateInterface;
+use Drupal\Core\Render\Element;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\group\Entity\GroupRelationship;
@@ -153,6 +154,58 @@ function osu_cas_multisite_groups_node_grants(AccountInterface $account, string 
     $gids[] = (int) $membership->getGroupRelationship()->getGroupId();
   }
   return $gids ? ['cas_group_private' => $gids] : [];
+}
+
+/**
+ * Implements hook_field_widget_complete_form_alter().
+ *
+ * Sorts the group select on node forms alphabetically.
+ *
+ * entitygroupfield builds its options in entity-load order — that is, by group
+ * id, which for migrated content means D7 creation order and reads as random.
+ * With 195 groups the list is unusable that way. The module offers no sort
+ * setting, so rather than patch contrib the options are reordered here, after
+ * the widget has decided which groups the user may actually post into.
+ *
+ * Options arrive grouped into optgroups keyed by group type label, so each
+ * optgroup is sorted on its own; a flat list is sorted directly. strcasecmp
+ * rather than natcasesort so "Fun Facts" files before "Funding Opportunities"
+ * — natural ordering skips the space and reverses them.
+ */
+function osu_cas_multisite_groups_field_widget_complete_form_alter(array &$field_widget_complete_form, FormStateInterface $form_state, array $context): void {
+  $plugin_id = $context['widget']->getPluginId();
+  if ($plugin_id !== 'entitygroupfield_select_widget') {
+    return;
+  }
+  _osu_cas_multisite_groups_sort_group_options($field_widget_complete_form);
+}
+
+/**
+ * Recursively alphabetises the #options of any select in a render array.
+ *
+ * The widget nests its select under wrappers that differ between the initial
+ * build and the AJAX "add another" rebuild, so the element is found by walking
+ * rather than by a fixed path.
+ */
+function _osu_cas_multisite_groups_sort_group_options(array &$element): void {
+  if (isset($element['#type'], $element['#options']) && $element['#type'] === 'select' && is_array($element['#options'])) {
+    foreach ($element['#options'] as &$option) {
+      // An optgroup: sort the groups inside it.
+      if (is_array($option)) {
+        uasort($option, fn($a, $b) => strcasecmp((string) $a, (string) $b));
+      }
+    }
+    unset($option);
+    // A flat list of groups, with no optgroups.
+    if (!array_filter($element['#options'], 'is_array')) {
+      uasort($element['#options'], fn($a, $b) => strcasecmp((string) $a, (string) $b));
+    }
+  }
+  foreach (Element::children($element) as $key) {
+    if (is_array($element[$key])) {
+      _osu_cas_multisite_groups_sort_group_options($element[$key]);
+    }
+  }
 }
 
 /**
