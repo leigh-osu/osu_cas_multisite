@@ -1,0 +1,358 @@
+langcode: en
+status: true
+dependencies:
+  enforced:
+    module:
+      - osu_cas_multisite_groups
+  config:
+    - system.action.node_delete_action
+  module:
+    - node
+    - user
+id: cas_unpublished
+label: Unpublished
+module: views
+description: 'All unpublished content, with its group and URL alias. Companion to the Orphaned content listing.'
+tag: ''
+base_table: node_field_data
+base_field: nid
+display:
+  default:
+    id: default
+    display_title: Default
+    display_plugin: default
+    position: 0
+    display_options:
+      title: 'Unpublished content'
+      fields:
+        node_bulk_form:
+          id: node_bulk_form
+          table: node
+          field: node_bulk_form
+          entity_type: node
+          plugin_id: node_bulk_form
+          label: ''
+          action_title: 'With selection'
+          include_exclude: include
+          selected_actions:
+            node_delete_action: node_delete_action
+        title:
+          id: title
+          table: node_field_data
+          field: title
+          entity_type: node
+          entity_field: title
+          plugin_id: field
+          label: Title
+          type: string
+          settings:
+            link_to_entity: true
+        cas_node_alias:
+          id: cas_node_alias
+          table: node_field_data
+          field: cas_node_alias
+          plugin_id: cas_node_alias
+          label: 'URL alias'
+          empty: '— no alias —'
+        type:
+          id: type
+          table: node_field_data
+          field: type
+          entity_type: node
+          entity_field: type
+          plugin_id: field
+          label: Type
+          type: entity_reference_label
+          settings:
+            link: false
+        cas_node_groups:
+          id: cas_node_groups
+          table: node_field_data
+          field: cas_node_groups
+          plugin_id: cas_node_groups
+          label: Group
+          empty: '— no group —'
+        name:
+          id: name
+          table: users_field_data
+          field: name
+          relationship: uid
+          entity_type: user
+          entity_field: name
+          plugin_id: field
+          label: Author
+          type: user_name
+          settings:
+            link_to_entity: false
+        changed:
+          id: changed
+          table: node_field_data
+          field: changed
+          entity_type: node
+          entity_field: changed
+          plugin_id: field
+          label: Updated
+          type: timestamp
+          settings:
+            date_format: custom
+            custom_date_format: 'm/d/y - H:i'
+            timezone: ''
+            tooltip:
+              date_format: ''
+              custom_date_format: ''
+            time_diff:
+              enabled: false
+              future_format: '@interval hence'
+              past_format: '@interval ago'
+              granularity: 2
+              refresh: 60
+        nid:
+          id: nid
+          table: node_field_data
+          field: nid
+          entity_type: node
+          entity_field: nid
+          plugin_id: field
+          label: ID
+      filters:
+        status:
+          id: status
+          table: node_field_data
+          field: status
+          entity_type: node
+          entity_field: status
+          plugin_id: boolean
+          operator: '='
+          value: '0'
+          group: 1
+          exposed: false
+        type:
+          id: type
+          table: node_field_data
+          field: type
+          entity_type: node
+          entity_field: type
+          plugin_id: bundle
+          operator: in
+          value: {  }
+          group: 1
+          exposed: true
+          expose:
+            operator_id: type_op
+            label: Type
+            operator: type_op
+            identifier: type
+            multiple: true
+            remember: false
+            reduce: false
+        title:
+          id: title
+          table: node_field_data
+          field: title
+          entity_type: node
+          entity_field: title
+          plugin_id: string
+          operator: contains
+          value: ''
+          group: 1
+          exposed: true
+          expose:
+            operator_id: title_op
+            label: 'Title contains'
+            operator: title_op
+            identifier: title
+            remember: false
+      sorts:
+        changed:
+          id: changed
+          table: node_field_data
+          field: changed
+          entity_type: node
+          entity_field: changed
+          plugin_id: date
+          order: DESC
+      relationships:
+        uid:
+          id: uid
+          table: node_field_data
+          field: uid
+          entity_type: node
+          entity_field: uid
+          plugin_id: standard
+          admin_label: Author
+          required: false
+      style:
+        type: table
+        options:
+          grouping: {  }
+          row_class: ''
+          default_row_class: true
+          columns:
+            node_bulk_form: node_bulk_form
+            title: title
+            cas_node_alias: cas_node_alias
+            type: type
+            cas_node_groups: cas_node_groups
+            name: name
+            changed: changed
+            nid: nid
+          default: changed
+          info:
+            node_bulk_form:
+              sortable: false
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            title:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            cas_node_alias:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            type:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            cas_node_groups:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            name:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            changed:
+              sortable: true
+              default_sort_order: desc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+            nid:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: priority-low
+          empty_table: true
+      row:
+        type: fields
+      pager:
+        type: full
+        options:
+          items_per_page: 100
+          offset: 0
+          id: 0
+          total_pages: null
+          expose:
+            items_per_page: true
+            items_per_page_label: 'Items per page'
+            items_per_page_options: '50, 100, 250, 500'
+            items_per_page_options_all: false
+            offset: false
+          tags:
+            previous: '‹ Previous'
+            next: 'Next ›'
+            first: '« First'
+            last: 'Last »'
+      access:
+        type: role
+        options:
+          role:
+            architect: architect
+            administrator: administrator
+      cache:
+        type: tag
+        options: {  }
+      empty:
+        area_text_custom:
+          id: area_text_custom
+          table: views
+          field: area_text_custom
+          plugin_id: text_custom
+          empty: true
+          content: 'No items match the current filter.'
+      header:
+        area_text_custom:
+          id: area_text_custom
+          table: views
+          field: area_text_custom
+          plugin_id: text_custom
+          empty: true
+          content: '<p>Every unpublished node on the site, newest first. Unpublished content is invisible to visitors but still occupies its alias, so a draft left behind after the migration keeps a path that a published page might otherwise want.</p><p>The Group column says who owns each one — anything showing <em>— no group —</em> is unowned as well as unpublished, and also appears in <a href="/admin/content/orphans">Orphaned content</a>.</p>'
+      use_ajax: true
+      exposed_form:
+        type: basic
+        options:
+          submit_button: Filter
+          reset_button: true
+          reset_button_label: Reset
+          expose_sorts: false
+      query:
+        type: views_query
+        options:
+          disable_sql_rewrite: false
+          # Required, not cosmetic. gnode's query alter adds a LEFT JOIN on
+          # group_relationship_field_data for access, which yields one row per
+          # group a node belongs to: 42 unpublished nodes are in more than one
+          # group and the listing reported 650 rows for 549 nodes until this was
+          # set. The Orphaned content view needs no such setting because its
+          # NOT EXISTS confines it to nodes in no group, where that join can
+          # only ever produce a single NULL row.
+          distinct: true
+      display_extenders: {  }
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'node_list'
+  page_1:
+    id: page_1
+    display_title: Page
+    display_plugin: page
+    position: 1
+    display_options:
+      path: admin/content/unpublished
+      menu:
+        type: tab
+        title: Unpublished
+        description: 'All unpublished content'
+        weight: 31
+        menu_name: admin
+        expanded: false
+      display_extenders: {  }
+    cache_metadata:
+      max-age: 0
+      contexts:
+        - 'languages:language_content'
+        - 'languages:language_interface'
+        - url
+        - url.query_args
+        - user.roles
+      tags:
+        - 'node_list'

@@ -225,6 +225,20 @@ function osu_cas_multisite_groups_views_data_alter(array &$data) {
         'click sortable' => TRUE,
       ],
     ];
+    $data['node_field_data']['cas_ungrouped_nodes'] = [
+      'title' => t('In no group'),
+      'help' => t('Content belonging to no group at all. NOT EXISTS rather than a LEFT JOIN with IS NULL, which would fan out for content in several groups.'),
+      'real field' => 'nid',
+      'filter' => ['id' => 'cas_ungrouped_nodes'],
+    ];
+    $data['node_field_data']['cas_node_alias'] = [
+      'title' => t('URL alias'),
+      'help' => t('The alias as stored, read by correlated subquery so the column stays click-sortable and the listing stays one query.'),
+      'field' => [
+        'id' => 'cas_node_alias',
+        'click sortable' => TRUE,
+      ],
+    ];
   }
   if (isset($data['groups_field_data'])) {
     $data['groups_field_data']['cas_my_groups'] = [
