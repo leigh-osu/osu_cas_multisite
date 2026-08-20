@@ -265,3 +265,77 @@ function osu_cas_multisite_form_alter(array &$form, FormStateInterface $form_sta
     $form['#attached']['library'][] = 'osu_cas_multisite/lb_unsaved_warning';
   }
 }
+
+/**
+ * Implements hook_osu_groups_site_wide_path_bundles_alter().
+ *
+ * Publications are addressed site-wide at /publication/<title>, not under the
+ * group that happens to hold them.
+ *
+ * osu_groups_basic_group_pathauto_pattern_alter() replaces whatever pattern
+ * matched with "/[node:group:url:path]/[node:title]" for any group-placed node,
+ * which is right for pages -- a page belongs to a unit's section of the site --
+ * and wrong for a publication. A paper is cited by URL and is not owned by one
+ * group: the same work is routinely attached to a lab, a department and a
+ * programme, and a group-scoped path would move it whenever that placement
+ * changed. The 8,171 migrated publications inherited exactly that problem from
+ * D7, where they sat under /biblio, /goyer-laboratory/biblio, /horticulture and
+ * /tradeoff-analysis-project/biblio according to which group had claimed them.
+ *
+ * The same reasoning the patch applied to profiles and feeds, and the same
+ * mechanism: this is the alter hook that patch introduced.
+ *
+ * @see patches/osu_groups-profile-paths-not-group-scoped.patch
+ * @see \Drupal\pathauto\PathautoGenerator::getPatternByEntity()
+ */
+function osu_cas_multisite_osu_groups_site_wide_path_bundles_alter(array &$bundles): void {
+  $bundles[] = 'publications';
+}
+
+/**
+ * Implements hook_views_data_alter().
+ *
+ * Exposes the publication author search as a filter on nodes rather than
+ * through a taxonomy relationship, which would multiply rows per author.
+ *
+ * @see \Drupal\osu_cas_multisite\Plugin\views\filter\CasPublicationAuthor
+ */
+function osu_cas_multisite_views_data_alter(array &$data): void {
+  if (!isset($data['node_field_data'])) {
+    return;
+  }
+  $data['node_field_data']['cas_publication_author'] = [
+    'title' => t('Publication author name'),
+    'help' => t("Matches any part of any author's name. EXISTS against the author terms rather than a relationship, so a publication with several authors stays one row."),
+    'real field' => 'nid',
+    'filter' => ['id' => 'cas_publication_author'],
+  ];
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for views_exposed_form.
+ *
+ * Narrows the year box on the publications listing.
+ *
+ * Views gives exposed filters no width setting, so every text input arrives as
+ * size="30" carrying Bootstrap's form-control, which is width:100%. That is
+ * right for Title and Author, where the value is a phrase, and silly for a year
+ * -- a four-character field stretched the full width of the filter bar and read
+ * as though a long value were expected.
+ *
+ * Both parts are needed: size alone does nothing against form-control's 100%,
+ * and w-auto alone would shrink the box to its (empty) content. maxlength stays
+ * at 4 because that covers every real year and both of Biblio's sentinels,
+ * 9998 and 9999.
+ *
+ * @see \Drupal\osu_cas_multisite\Plugin\Field\FieldFormatter\CasPublicationYear
+ */
+function osu_cas_multisite_form_views_exposed_form_alter(array &$form, FormStateInterface $form_state, $form_id): void {
+  $view = $form_state->get('view');
+  if (!$view || $view->id() !== 'osu_publications' || !isset($form['pub_year'])) {
+    return;
+  }
+  $form['pub_year']['#size'] = 6;
+  $form['pub_year']['#maxlength'] = 4;
+  $form['pub_year']['#attributes']['class'][] = 'w-auto';
+}
