@@ -15,3 +15,19 @@ osu_cas_multisite_groups.my_groups:
     _title: 'My Groups'
   requirements:
     _custom_access: 'Drupal\osu_cas_multisite_groups\Controller\MyGroupsController::access'
+
+# The group's own settings for what may be created in it.
+osu_cas_multisite_groups.group_content_settings:
+  path: '/group/{group}/content-settings'
+  defaults:
+    _form: 'Drupal\osu_cas_multisite_groups\Form\GroupSettingsForm'
+    _title: 'Group Content'
+  options:
+    parameters:
+      group:
+        type: 'entity:group'
+  requirements:
+    # Whoever may edit the group decides what it publishes. 'administer all cas
+    # groups' covers architects and administrators, who are not members.
+    _group_permission: 'edit group'
+    _entity_access: 'group.update'

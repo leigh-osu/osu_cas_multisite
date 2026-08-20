@@ -182,6 +182,22 @@ class CasGroupAddContentBlock extends BlockBase implements ContainerFactoryPlugi
       }
       $types[$bundle] = (string) $node_types[$bundle]->label();
     }
+
+    // The group's own choice, from its OSU CAS tab. An empty field means all
+    // types -- the behaviour every group had before the setting existed, and
+    // the only safe default: read empty as "none" and all 195 groups would
+    // offer nothing until somebody filled them in.
+    $chosen = [];
+    if ($group->hasField('field_group_content_types')) {
+      foreach ($group->get('field_group_content_types') as $item) {
+        $chosen[] = $item->target_id;
+      }
+    }
+    // Administrators see the full list: the setting shapes what a unit offers
+    // its own editors, not what the site's administrators may do.
+    if ($chosen && !\Drupal::currentUser()->hasPermission('administer group')) {
+      $types = array_intersect_key($types, array_flip($chosen));
+    }
     return $types;
   }
 

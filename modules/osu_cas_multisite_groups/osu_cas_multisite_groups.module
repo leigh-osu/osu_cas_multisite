@@ -544,3 +544,101 @@ function osu_cas_multisite_groups_field_widget_single_element_form_alter(array &
     '<strong>' . \Drupal\Component\Utility\Html::escape((string) $context['items']->getFieldDefinition()->getLabel()) . '</strong>'
   );
 }
+
+/**
+ * Implements hook_form_alter().
+ *
+ * Hides tagging fields belonging to other units.
+ *
+ * A story form offers 19 taxonomy fields — COAREC authors, Malheur topics,
+ * OWRI, SWD, turf, veg, nursery and the rest — because every unit's vocabulary
+ * has its own field and all of them are on every form. Almost none of it is
+ * relevant to the person writing, and a wall of empty selects is how tagging
+ * stops happening at all.
+ *
+ * A group names the vocabularies it uses on its OSU CAS tab; the rest are
+ * hidden while writing there. Two rules keep this from losing anything:
+ *
+ * - A group naming nothing shows everything, which is today's behaviour and the
+ *   state all 195 groups start in.
+ * - A field already holding a value is always shown, whoever the group is. An
+ *   inaccessible field keeps its stored value on save, so hiding one would not
+ *   destroy data, but it would leave an editor unable to see or correct a tag
+ *   that is live on the page.
+ */
+function osu_cas_multisite_groups_form_alter(array &$form, FormStateInterface $form_state, $form_id): void {
+  $object = $form_state->getFormObject();
+  if (!$object instanceof \Drupal\Core\Entity\EntityFormInterface) {
+    return;
+  }
+  $node = $object->getEntity();
+  if (!$node instanceof NodeInterface || !in_array($object->getOperation(), ['default', 'edit'], TRUE)) {
+    return;
+  }
+  // Administrators see every unit's fields.
+  if (\Drupal::currentUser()->hasPermission('administer group')) {
+    return;
+  }
+
+  $vocabularies = _osu_cas_multisite_groups_group_vocabularies($node);
+  if ($vocabularies === NULL) {
+    // No group context, or the group names no vocabularies: show everything.
+    return;
+  }
+
+  foreach (\Drupal::service('entity_field.manager')->getFieldDefinitions('node', $node->bundle()) as $name => $definition) {
+    if (!isset($form[$name])) {
+      continue;
+    }
+    if ($definition->getType() !== 'entity_reference' || $definition->getSetting('target_type') !== 'taxonomy_term') {
+      continue;
+    }
+    // Never hide a field the content is already using.
+    if ($node->hasField($name) && !$node->get($name)->isEmpty()) {
+      continue;
+    }
+    $targets = array_keys($definition->getSetting('handler_settings')['target_bundles'] ?? []);
+    if ($targets && !array_intersect($targets, $vocabularies)) {
+      $form[$name]['#access'] = FALSE;
+    }
+  }
+}
+
+/**
+ * The vocabularies the node's group context allows, or NULL for no restriction.
+ */
+function _osu_cas_multisite_groups_group_vocabularies(NodeInterface $node): ?array {
+  $gids = [];
+  // Creating through a group: the group is in the route, which is the normal
+  // path and the only one available while the node has no id yet.
+  $route_group = \Drupal::routeMatch()->getParameter('group');
+  if ($route_group) {
+    $gids[] = is_object($route_group) ? $route_group->id() : $route_group;
+  }
+  elseif (!$node->isNew()) {
+    $gids = \Drupal::database()->query(
+      "SELECT DISTINCT gid FROM {group_relationship_field_data}
+       WHERE entity_id = :nid AND plugin_id LIKE 'group\\_node:%'",
+      [':nid' => $node->id()]
+    )->fetchCol();
+  }
+  if (!$gids) {
+    return NULL;
+  }
+
+  $allowed = [];
+  foreach (\Drupal::entityTypeManager()->getStorage('group')->loadMultiple($gids) as $group) {
+    if (!$group->hasField('field_group_vocabularies')) {
+      continue;
+    }
+    // One group naming nothing means no restriction at all: content shared with
+    // a group that has not configured itself must not be narrowed by another.
+    if ($group->get('field_group_vocabularies')->isEmpty()) {
+      return NULL;
+    }
+    foreach ($group->get('field_group_vocabularies') as $item) {
+      $allowed[$item->target_id] = $item->target_id;
+    }
+  }
+  return $allowed ? array_values($allowed) : NULL;
+}

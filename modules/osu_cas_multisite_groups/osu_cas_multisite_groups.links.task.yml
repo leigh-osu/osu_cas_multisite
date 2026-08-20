@@ -1,0 +1,6 @@
+
+osu_cas_multisite_groups.group_content_settings:
+  route_name: osu_cas_multisite_groups.group_content_settings
+  base_route: entity.group.canonical
+  title: 'Group Content'
+  weight: 40
