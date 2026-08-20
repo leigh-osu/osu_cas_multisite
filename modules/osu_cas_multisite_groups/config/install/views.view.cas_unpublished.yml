@@ -65,6 +65,19 @@ display:
           type: entity_reference_label
           settings:
             link: false
+        status:
+          id: status
+          table: node_field_data
+          field: status
+          entity_type: node
+          entity_field: status
+          plugin_id: field
+          label: Published
+          type: boolean
+          settings:
+            format: custom
+            format_custom_true: Published
+            format_custom_false: Unpublished
         cas_node_groups:
           id: cas_node_groups
           table: node_field_data
@@ -192,6 +205,7 @@ display:
             title: title
             cas_node_alias: cas_node_alias
             type: type
+            status: status
             cas_node_groups: cas_node_groups
             name: name
             changed: changed
@@ -220,6 +234,13 @@ display:
               empty_column: false
               responsive: ''
             type:
+              sortable: true
+              default_sort_order: asc
+              align: ''
+              separator: ''
+              empty_column: false
+              responsive: ''
+            status:
               sortable: true
               default_sort_order: asc
               align: ''
