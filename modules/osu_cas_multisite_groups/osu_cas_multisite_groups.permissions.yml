@@ -2,3 +2,7 @@
   title: 'Administer every group, without joining it'
   description: 'Grants full permissions in every group of every type. Group ignores site permissions by design, so without this an administrator who is not a member of a group can only view it. Equivalent to the admin group role in all groups at once.'
   restrict access: true
+'add content to multiple groups':
+  title: 'Place one piece of content in more than one group'
+  description: 'Content normally belongs to exactly one group — the unit that owns it. Holders may add further groups, which makes the same node appear in several units'' listings and menus. Existing multi-group content is never disturbed by the absence of this permission; only adding another group is withheld.'
+  restrict access: true

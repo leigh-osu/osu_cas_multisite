@@ -177,6 +177,8 @@ function osu_cas_multisite_groups_field_widget_complete_form_alter(array &$field
   if ($plugin_id !== 'entitygroupfield_select_widget') {
     return;
   }
+  $bundle = $context['items']->getEntity()->bundle();
+  _osu_cas_multisite_groups_limit_group_count($field_widget_complete_form, $bundle);
   _osu_cas_multisite_groups_sort_group_options($field_widget_complete_form);
 }
 
@@ -350,4 +352,195 @@ function osu_cas_multisite_groups_user_login($account): void {
   }
 
   $request->query->set('destination', Url::fromRoute('osu_cas_multisite_groups.dashboard')->toString());
+}
+
+/**
+ * Content types any editor may place in more than one group.
+ */
+const OSU_CAS_MULTI_GROUP_BUNDLES = [
+  // A story is news, and news is routinely a joint announcement: the same piece
+  // belongs in the department's feed and the college's. 1,060 of the 1,254
+  // nodes already sitting in two or more groups are stories, so this is the
+  // existing editorial practice rather than a new allowance. A story still has
+  // to name at least one owning unit.
+  'story',
+];
+
+/**
+ * Content types that may stand outside the group structure.
+ *
+ * A publication is cited by URL and belongs to its authors, not to one unit; a
+ * profile follows the person; simple tabs, webforms and live feeds are building
+ * blocks placed into a page rather than content a unit owns. Everything else is
+ * a unit's content and must say which unit.
+ */
+const OSU_CAS_GROUPLESS_BUNDLES = [
+  'publications',
+  'osu_profile',
+  'osu_simple_tabs',
+  'webform',
+  'feed',
+];
+
+/**
+ * Implements hook_entity_form_display_alter().
+ *
+ * Requires a group on the content types that belong to a unit.
+ *
+ * Set here rather than in each bundle's form display because it is one rule
+ * about the site, not twenty independent settings that drift apart: a new
+ * content type is covered the day it is created, and the exemption list reads
+ * as the policy it is.
+ *
+ * @see OSU_CAS_GROUPLESS_BUNDLES
+ */
+function osu_cas_multisite_groups_entity_form_display_alter(&$form_display, array $context): void {
+  if ($context['entity_type'] !== 'node') {
+    return;
+  }
+  $component = $form_display->getComponent('entitygroupfield');
+  if (!$component) {
+    return;
+  }
+  // Every group belongs to exactly one domain -- all 195 of them -- so for
+  // ordinary content the domain is a consequence of the group, not a decision.
+  // Three domain widgets invite an editor to contradict that, and a node
+  // published to a domain its group does not serve is invisible where people
+  // look for it. Hidden rather than removed: a field absent from the form is
+  // left untouched on save, so the 6,530 nodes already published beyond their
+  // group's domain keep those placements instead of being quietly withdrawn.
+  if (!\Drupal::currentUser()->hasPermission('administer domains')) {
+    foreach (OSU_CAS_DOMAIN_FIELDS as $domain_field) {
+      $form_display->removeComponent($domain_field);
+    }
+  }
+
+  $required = !in_array($context['bundle'], OSU_CAS_GROUPLESS_BUNDLES, TRUE);
+  if (($component['settings']['required'] ?? FALSE) === $required) {
+    return;
+  }
+  $component['settings']['required'] = $required;
+  $form_display->setComponent('entitygroupfield', $component);
+}
+
+/**
+ * Withholds "add another group" from users who may not place content twice.
+ *
+ * Content belongs to one unit. Adding a second group makes the same node appear
+ * in another unit's listings and menus, which is occasionally right and usually
+ * a mistake, so it is reserved to holders of 'add content to multiple groups'.
+ *
+ * Only the add control is removed, never an existing value. 1,254 nodes already
+ * sit in two or more groups — 1,060 of them stories — and rendering a
+ * single-value widget over those would have dropped the extra groups silently
+ * the next time an editor pressed Save. Withholding the button leaves that
+ * content exactly as it is while stopping the pattern from spreading, which is
+ * also what was asked for: who may *add* another group.
+ *
+ * The button is left in place when nothing is selected yet, since the first
+ * group is the one everyone must be able to choose.
+ */
+function _osu_cas_multisite_groups_limit_group_count(array &$element, string $bundle): void {
+  if (in_array($bundle, OSU_CAS_MULTI_GROUP_BUNDLES, TRUE)) {
+    return;
+  }
+  if (\Drupal::currentUser()->hasPermission('add content to multiple groups')) {
+    return;
+  }
+  $widget = &$element['widget'] ?? $element;
+  if (!isset($widget['add_more'])) {
+    return;
+  }
+  // Rows are the numeric children; anything else is structure.
+  $rows = 0;
+  foreach (\Drupal\Core\Render\Element::children($widget) as $key) {
+    if (is_numeric($key)) {
+      $rows++;
+    }
+  }
+  if ($rows >= 1) {
+    $widget['add_more']['#access'] = FALSE;
+  }
+}
+
+/**
+ * Domain fields shown only to users who administer domains.
+ */
+const OSU_CAS_DOMAIN_FIELDS = [
+  'field_domain_access',
+  'field_domain_source',
+  'field_domain_all_affiliates',
+];
+
+
+/**
+ * Implements hook_ENTITY_TYPE_presave() for node.
+ *
+ * Gives content a domain when nothing else has.
+ *
+ * The domain widgets are hidden from editors, and the field carries no default
+ * value or callback -- verified by saving a node as an ordinary author, which
+ * produced an empty field_domain_access. Content with no domain is published to
+ * nowhere: it appears on no site while looking perfectly fine in the content
+ * list. So the value has to come from somewhere, and the group is the honest
+ * source, falling back to whichever domain the author is working on.
+ *
+ * Only ever fills an empty field. Rewriting a populated one would collapse the
+ * 6,530 nodes currently published beyond their group's domain the moment
+ * anybody edited them.
+ */
+function osu_cas_multisite_groups_node_presave(\Drupal\node\NodeInterface $node): void {
+  if (!$node->hasField('field_domain_access') || !$node->get('field_domain_access')->isEmpty()) {
+    return;
+  }
+
+  // The domains of the groups this node is in. Empty for new content, whose
+  // group relationship is written after the node itself.
+  $domains = [];
+  if (!$node->isNew()) {
+    $domains = \Drupal::database()->query(
+      "SELECT DISTINCT gd.field_domain_access_target_id
+       FROM {group_relationship_field_data} gr
+       JOIN {group__field_domain_access} gd ON gd.entity_id = gr.gid
+       WHERE gr.entity_id = :nid AND gr.plugin_id LIKE 'group\\_node:%'",
+      [':nid' => $node->id()]
+    )->fetchCol();
+  }
+
+  if (!$domains) {
+    $active = \Drupal::service('domain.negotiator')->getActiveDomain();
+    if (!$active) {
+      return;
+    }
+    $domains = [$active->id()];
+  }
+
+  $node->set('field_domain_access', array_values($domains));
+  if ($node->hasField('field_domain_source') && $node->get('field_domain_source')->isEmpty()) {
+    $node->set('field_domain_source', reset($domains));
+  }
+}
+
+/**
+ * Implements hook_field_widget_single_element_form_alter().
+ *
+ * Emphasises the "Group members only" label.
+ *
+ * The checkbox changes who can see the content, and it sits in a column of
+ * ordinary options where nothing distinguishes it. A field label is escaped on
+ * output, so the emphasis cannot come from the label text itself; setting the
+ * element title to markup here is the supported way to do it, and the
+ * description below it already carries the warning about what the setting is
+ * and is not good for.
+ */
+function osu_cas_multisite_groups_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, array $context): void {
+  if ($context['items']->getFieldDefinition()->getName() !== 'field_group_private') {
+    return;
+  }
+  if (!isset($element['value']['#title'])) {
+    return;
+  }
+  $element['value']['#title'] = \Drupal\Core\Render\Markup::create(
+    '<strong>' . \Drupal\Component\Utility\Html::escape((string) $context['items']->getFieldDefinition()->getLabel()) . '</strong>'
+  );
 }

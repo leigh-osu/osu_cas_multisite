@@ -7,11 +7,13 @@
 
 use Drupal\Core\Access\AccessResult;
 use Drupal\Core\Access\AccessResultInterface;
+use Drupal\Core\Block\BlockPluginInterface;
 use Drupal\Core\Entity\Display\EntityViewDisplayInterface;
 use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
+use Drupal\osu_cas_multisite\Render\CasBrandingGroupFallback;
 use Drupal\views\Views;
 
 /**
@@ -338,4 +340,15 @@ function osu_cas_multisite_form_views_exposed_form_alter(array &$form, FormState
   $form['pub_year']['#size'] = 6;
   $form['pub_year']['#maxlength'] = 4;
   $form['pub_year']['#attributes']['class'][] = 'w-auto';
+}
+
+/**
+ * Implements hook_block_view_BASE_BLOCK_ID_alter() for system_branding_block.
+ *
+ * Adds the header fallback for content that belongs to no group.
+ *
+ * @see \Drupal\osu_cas_multisite\Render\CasBrandingGroupFallback
+ */
+function osu_cas_multisite_block_view_system_branding_block_alter(array &$build, BlockPluginInterface $block): void {
+  $build['#pre_render'][] = [CasBrandingGroupFallback::class, 'preRender'];
 }
