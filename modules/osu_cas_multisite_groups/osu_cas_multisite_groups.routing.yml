@@ -21,7 +21,7 @@ osu_cas_multisite_groups.group_content_settings:
   path: '/group/{group}/content-settings'
   defaults:
     _form: 'Drupal\osu_cas_multisite_groups\Form\GroupSettingsForm'
-    _title: 'Group Content'
+    _title: 'Content Settings'
   options:
     parameters:
       group:
