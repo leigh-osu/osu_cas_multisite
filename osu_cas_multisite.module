@@ -352,3 +352,94 @@ function osu_cas_multisite_form_views_exposed_form_alter(array &$form, FormState
 function osu_cas_multisite_block_view_system_branding_block_alter(array &$build, BlockPluginInterface $block): void {
   $build['#pre_render'][] = [CasBrandingGroupFallback::class, 'preRender'];
 }
+
+/**
+ * Implements hook_user_cancel_methods_alter().
+ *
+ * Withholds "Delete the account, its content and groups." from the account
+ * cancellation form. On this platform an account's content is the historical
+ * record of a department -- profiles, stories, pages, whole groups the person
+ * created -- and the Group module widens core's delete method to take the
+ * groups and their content relationships with it. One radio button on one
+ * form should not be able to erase a unit's history.
+ *
+ * The disable and reassign methods remain, which cover every real
+ * offboarding case. Runs after group_user_cancel_methods_alter (module order
+ * is alphabetical), so this removes the option the Group module just
+ * finished labelling.
+ */
+function osu_cas_multisite_user_cancel_methods_alter(array &$methods): void {
+  unset($methods['user_cancel_delete']);
+}
+
+/**
+ * Implements hook_form_FORM_ID_alter() for user_cancel_form.
+ *
+ * Cancelling an account answers what happens to the account; it says nothing
+ * about the person's OSU Profile node, which is a separate piece of content
+ * that would otherwise linger as a directory entry for someone who is gone --
+ * or, under the reassign method, quietly become owned by Anonymous. When the
+ * person has a profile, the form asks the question directly and does what the
+ * administrator answers.
+ *
+ * Unchecked by default: the destructive half of the choice is opt-in.
+ */
+function osu_cas_multisite_form_user_cancel_form_alter(array &$form, FormStateInterface $form_state, $form_id): void {
+  /** @var \Drupal\user\UserInterface $account */
+  $account = $form_state->getFormObject()->getEntity();
+
+  // No emailing the person for permission: accounts here are CAS-backed, and
+  // the administrator on this form is the decision. Hidden rather than
+  // removed, and pinned to 0, because core treats an EMPTY value as "cancel
+  // now" -- a missing element would fall back to its default and quietly
+  // reintroduce the confirmation mail for anyone without the override
+  // permission.
+  $form['user_cancel_confirm']['#access'] = FALSE;
+  $form['user_cancel_confirm']['#value'] = 0;
+
+  $nids = \Drupal::entityTypeManager()->getStorage('node')->getQuery()
+    ->accessCheck(FALSE)
+    ->condition('type', 'osu_profile')
+    ->condition('field_profile_user', $account->id())
+    ->sort('nid')
+    ->execute();
+  if (!$nids) {
+    return;
+  }
+
+  $profiles = \Drupal::entityTypeManager()->getStorage('node')->loadMultiple($nids);
+  $name = reset($profiles)->label() ?: $account->getDisplayName();
+
+  $form['osu_cas_delete_profile'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Do you want to delete the OSU Profile for %name?', ['%name' => $name]),
+    '#description' => t('The profile is its own page in the directory and is not removed by cancelling the account. Leave unchecked to keep it.'),
+    '#default_value' => FALSE,
+    '#weight' => 5,
+  ];
+  $form_state->set('osu_cas_profile_nids', array_values($nids));
+
+  if (isset($form['actions']['submit'])) {
+    $form['actions']['submit']['#submit'][] = '_osu_cas_multisite_user_cancel_delete_profile';
+  }
+}
+
+/**
+ * Deletes the cancelled user's OSU Profile when the administrator asked to.
+ *
+ * Runs after the core submit that queues the cancellation, in the same
+ * request, so the answer is honoured whichever cancellation method was
+ * chosen.
+ */
+function _osu_cas_multisite_user_cancel_delete_profile(array &$form, FormStateInterface $form_state): void {
+  if (!$form_state->getValue('osu_cas_delete_profile')) {
+    return;
+  }
+  $nids = $form_state->get('osu_cas_profile_nids') ?: [];
+  $storage = \Drupal::entityTypeManager()->getStorage('node');
+  foreach ($storage->loadMultiple($nids) as $profile) {
+    $title = $profile->label();
+    $profile->delete();
+    \Drupal::messenger()->addStatus(t('The OSU Profile %title has been deleted.', ['%title' => $title]));
+  }
+}

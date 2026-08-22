@@ -180,6 +180,97 @@ function osu_cas_multisite_groups_field_widget_complete_form_alter(array &$field
   $bundle = $context['items']->getEntity()->bundle();
   _osu_cas_multisite_groups_limit_group_count($field_widget_complete_form, $bundle);
   _osu_cas_multisite_groups_sort_group_options($field_widget_complete_form);
+
+  // Adopt a group left sitting in the dropdown, ahead of the widget's own
+  // required check -- see _osu_cas_multisite_groups_adopt_pending_group().
+  if (isset($field_widget_complete_form['widget']['#element_validate'])) {
+    array_unshift(
+      $field_widget_complete_form['widget']['#element_validate'],
+      '_osu_cas_multisite_groups_adopt_pending_group'
+    );
+  }
+}
+
+/**
+ * Adopts a group selected in the dropdown but never added as a row.
+ *
+ * The entitygroupfield widget is a two-step control: pick a group, press
+ * "Add to Group", and only then does the selection exist as far as saving is
+ * concerned. Editors reasonably treat picking from the dropdown as having
+ * answered the question, press Save, and are told "Groups field is required"
+ * with the highlight sitting on the very dropdown that still shows their
+ * choice. Since 1.25 made the field required on most bundles, that papercut
+ * blocks the whole form.
+ *
+ * This runs ahead of the widget's own multipleElementValidate (prepended in
+ * the complete-form alter above) and does what the missed button press would
+ * have done, without the rebuild: create the relationship entity, register it
+ * in the widget's state the way an existing closed row is registered
+ * (mode 'closed' with show_warning, which is the widget's own "closed but
+ * still needs saving" combination -- 'edit' would send massageFormValues
+ * looking for a subform this row never rendered), and seed a matching values
+ * row so extraction visits the new delta. The widget's massage and postSave
+ * then persist it exactly as if the button had been pressed.
+ *
+ * An empty dropdown changes nothing, so a genuinely missing group still gets
+ * the required error.
+ */
+function _osu_cas_multisite_groups_adopt_pending_group(array $element, FormStateInterface $form_state): void {
+  $field_name = $element['#field_name'];
+  $parents = $element['#field_parents'];
+
+  $selected = \Drupal\Component\Utility\NestedArray::getValue(
+    $form_state->getValues(),
+    array_merge($parents, [$field_name, 'add_more', 'add_relation'])
+  );
+  if (empty($selected)) {
+    return;
+  }
+
+  $widget_state = \Drupal\Core\Field\WidgetBase::getWidgetState($parents, $field_name, $form_state);
+
+  // Respect the field cardinality the same way addMoreSubmit does.
+  $cardinality = $element['#cardinality'] ?? \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED;
+  if ($cardinality != \Drupal\Core\Field\FieldStorageDefinitionInterface::CARDINALITY_UNLIMITED
+    && ($widget_state['real_item_count'] ?? 0) >= $cardinality) {
+    return;
+  }
+
+  $group = \Drupal\group\Entity\Group::load($selected);
+  if (!$group || empty($widget_state['entity_plugin_id'])) {
+    return;
+  }
+
+  $relationship_type_id = \Drupal::entityTypeManager()
+    ->getStorage(entitygroupfield_get_group_relationship_type_id())
+    ->getRelationshipTypeId($group->getGroupType()->id(), $widget_state['entity_plugin_id']);
+
+  $relationship = \Drupal::entityTypeManager()->getStorage('group_content')->create([
+    'type' => $relationship_type_id,
+    'gid' => $group->id(),
+  ]);
+
+  $delta = isset($widget_state['gcontent']) ? count($widget_state['gcontent']) : 0;
+  $widget_state['gcontent'][$delta] = [
+    'entity' => $relationship,
+    // The form display is only USED for rows in edit mode, but
+    // massageFormValues reads the key unconditionally, so a closed row
+    // without one warns on every save. Store the same display the widget
+    // itself would have collected for this row.
+    'display' => \Drupal\Core\Entity\Entity\EntityFormDisplay::collectRenderDisplay($relationship, 'default'),
+    'mode' => 'closed',
+    'show_warning' => TRUE,
+  ];
+  $widget_state['real_item_count'] = ($widget_state['real_item_count'] ?? 0) + 1;
+  $widget_state['items_count'] = max($widget_state['items_count'] ?? 0, $widget_state['real_item_count']);
+  \Drupal\Core\Field\WidgetBase::setWidgetState($parents, $field_name, $form_state, $widget_state);
+
+  // A values row for the new delta, so extractFormValues carries it through
+  // to massageFormValues.
+  $form_state->setValue(array_merge($parents, [$field_name, $delta]), ['_weight' => $delta]);
+
+  // The selection has been consumed.
+  $form_state->setValue(array_merge($parents, [$field_name, 'add_more', 'add_relation']), '');
 }
 
 /**
