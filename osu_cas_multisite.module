@@ -443,3 +443,64 @@ function _osu_cas_multisite_user_cancel_delete_profile(array &$form, FormStateIn
     \Drupal::messenger()->addStatus(t('The OSU Profile %title has been deleted.', ['%title' => $title]));
   }
 }
+
+/**
+ * Implements hook_page_attachments().
+ *
+ * Monsido (Acquia Optimize) site script, one token per domain -- the D10 port
+ * of D7's domain_monsido module plus the larch theme's html.tpl.php snippet.
+ * The emitted configuration matches the D7 markup exactly (statistics on,
+ * cookieless and document tracking off); only the delivery moved from a theme
+ * template to attachments, keyed by osu_cas_multisite.monsido, which maps
+ * domain record ids to tokens. Domains without a token emit nothing, and
+ * admin routes are skipped -- in D7 the snippet lived in the front-end theme,
+ * so the admin theme never carried it either.
+ */
+function osu_cas_multisite_page_attachments(array &$attachments): void {
+  if (\Drupal::service('router.admin_context')->isAdminRoute()) {
+    return;
+  }
+  if (!\Drupal::moduleHandler()->moduleExists('domain')) {
+    return;
+  }
+  $attachments['#cache']['contexts'][] = 'url.site';
+  $attachments['#cache']['tags'][] = 'config:osu_cas_multisite.monsido';
+  $domain = \Drupal::service('domain.negotiator')->getActiveDomain();
+  if (!$domain) {
+    return;
+  }
+  $token = \Drupal::config('osu_cas_multisite.monsido')->get('tokens.' . $domain->id());
+  if (!$token) {
+    return;
+  }
+  $monsido = [
+    'token' => $token,
+    'statistics' => [
+      'enabled' => TRUE,
+      'cookieLessTracking' => FALSE,
+      'documentTracking' => [
+        'enabled' => FALSE,
+        'documentCls' => 'monsido_download',
+        'documentIgnoreCls' => 'monsido_ignore_download',
+        'documentExt' => [],
+      ],
+    ],
+  ];
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#tag' => 'script',
+      '#value' => 'window._monsido = window._monsido || ' . json_encode($monsido, JSON_UNESCAPED_SLASHES) . ';',
+    ],
+    'osu_cas_multisite_monsido_config',
+  ];
+  $attachments['#attached']['html_head'][] = [
+    [
+      '#tag' => 'script',
+      '#attributes' => [
+        'src' => 'https://app-script.monsido.com/v2/monsido-script.js',
+        'async' => TRUE,
+      ],
+    ],
+    'osu_cas_multisite_monsido_script',
+  ];
+}

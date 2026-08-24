@@ -1,0 +1,10 @@
+osu_cas_multisite.monsido:
+  type: config_object
+  label: 'Monsido per-domain site tokens'
+  mapping:
+    tokens:
+      type: sequence
+      label: 'Site tokens keyed by domain record id'
+      sequence:
+        type: string
+        label: 'Monsido site token'
