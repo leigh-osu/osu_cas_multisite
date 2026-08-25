@@ -138,8 +138,9 @@ class GroupMenuBreadcrumbBuilder implements BreadcrumbBuilderInterface {
       }
     }
 
-    // The current page is deliberately NOT appended — the trail shows only
-    // the path to get here (matching easy_breadcrumb's configuration).
+    // End the trail with the current page's title as a plain-text crumb
+    // (matching easy_breadcrumb's include_title_segment / unlinked title).
+    $links[] = Link::createFromRoute($node->getTitle(), '<none>');
     $breadcrumb->setLinks($links);
     return $breadcrumb;
   }
