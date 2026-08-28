@@ -5,6 +5,7 @@ namespace Drupal\osu_cas_multisite_groups\EventSubscriber;
 use Drupal\Core\Entity\EntityTypeManagerInterface;
 use Drupal\Core\Routing\TrustedRedirectResponse;
 use Drupal\Core\Session\AccountInterface;
+use Drupal\path_alias\AliasManagerInterface;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpKernel\Event\ExceptionEvent;
@@ -32,6 +33,7 @@ class AnonymousGroupRedirect implements EventSubscriberInterface {
   public function __construct(
     protected AccountInterface $currentUser,
     protected EntityTypeManagerInterface $entityTypeManager,
+    protected AliasManagerInterface $aliasManager,
   ) {}
 
   /**
@@ -57,9 +59,15 @@ class AnonymousGroupRedirect implements EventSubscriberInterface {
 
     // The group is read from the path, not the route parameters: access is
     // checked during routing, so the exception can be thrown before the
-    // parameter is upcast onto the request.
-    if (!preg_match('#^/group/(\d+)$#', rtrim($request->getPathInfo(), '/'), $match)) {
-      return;
+    // parameter is upcast onto the request. Groups reached through a path
+    // ALIAS (the migrated D7 group aliases, e.g. /group/gemm-lab) carry the
+    // alias in the path info, so resolve it to the internal /group/N first.
+    $path = rtrim($request->getPathInfo(), '/');
+    if (!preg_match('#^/group/(\d+)$#', $path, $match)) {
+      $internal = $this->aliasManager->getPathByAlias($path);
+      if (!preg_match('#^/group/(\d+)$#', $internal, $match)) {
+        return;
+      }
     }
     $group = $this->entityTypeManager->getStorage('group')->load($match[1]);
     if (!$group || !$group->hasField('field_group_home_page') || $group->get('field_group_home_page')->isEmpty()) {
