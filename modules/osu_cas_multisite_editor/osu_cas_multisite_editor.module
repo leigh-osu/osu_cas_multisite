@@ -23,3 +23,16 @@ function osu_cas_multisite_editor_ckeditor_plugin_info_alter(array &$plugins) {
     $plugins['osu_ckeditor_plugins_osu_buttons']['provider'] = 'osu_cas_multisite_editor';
   }
 }
+
+/**
+ * Implements hook_library_info_alter().
+ *
+ * Rides the modal-focus fix along with CKEditor itself, so any editor that
+ * ends up inside a jQuery UI modal (layout_builder_modal block forms) gets
+ * workable dialogs. See js/ckeditor-modal-focus.js for the why.
+ */
+function osu_cas_multisite_editor_library_info_alter(array &$libraries, string $extension): void {
+  if ($extension === 'ckeditor' && isset($libraries['drupal.ckeditor'])) {
+    $libraries['drupal.ckeditor']['dependencies'][] = 'osu_cas_multisite_editor/ckeditor-modal-focus';
+  }
+}

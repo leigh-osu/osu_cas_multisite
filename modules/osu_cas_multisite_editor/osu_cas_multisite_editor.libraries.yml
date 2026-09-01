@@ -1,0 +1,6 @@
+ckeditor-modal-focus:
+  js:
+    js/ckeditor-modal-focus.js: {}
+  dependencies:
+    - core/jquery
+    - core/drupal.dialog
