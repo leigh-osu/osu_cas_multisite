@@ -266,6 +266,44 @@ function osu_cas_multisite_form_alter(array &$form, FormStateInterface $form_sta
   if (str_ends_with($form_id, '_layout_builder_form')) {
     $form['#attached']['library'][] = 'osu_cas_multisite/lb_unsaved_warning';
   }
+  // Every public webform gets the site's default CAPTCHA challenge
+  // (reCAPTCHA) for visitors without 'skip CAPTCHA'. Webform submission
+  // forms carry a per-webform form id and base form id, so a single
+  // CAPTCHA point cannot cover them, and CAPTCHA's global switch would also
+  // hit site search and views exposed filters.
+  _osu_cas_multisite_webform_captcha($form, $form_state);
+}
+
+/**
+ * Adds the default CAPTCHA element to a webform submission form.
+ *
+ * Only the visitor-facing add form: edit/test/draft-edit operations are
+ * editor tools. Skipped when the webform already carries its own captcha
+ * element, when the module is absent, or when the account may skip CAPTCHA.
+ */
+function _osu_cas_multisite_webform_captcha(array &$form, FormStateInterface $form_state): void {
+  $form_object = $form_state->getFormObject();
+  if (!$form_object instanceof \Drupal\webform\WebformSubmissionForm
+    || $form_object->getOperation() !== 'add'
+    || !\Drupal::moduleHandler()->moduleExists('captcha')
+    || \Drupal::currentUser()->hasPermission('skip CAPTCHA')) {
+    return;
+  }
+  // A webform can carry its own captcha element with per-form settings;
+  // leave those alone.
+  foreach ($form_object->getWebform()->getElementsInitializedAndFlattened() as $element) {
+    if (($element['#type'] ?? '') === 'captcha') {
+      return;
+    }
+  }
+  // Same placement rule CAPTCHA uses for its own points: just before the
+  // form's actions.
+  $captcha_element = [
+    '#type' => 'captcha',
+    '#captcha_type' => \Drupal::config('captcha.settings')->get('default_challenge') ?: 'default',
+  ];
+  $placement = _captcha_get_captcha_placement($form['#form_id'] ?? $form_object->getFormId(), $form);
+  \Drupal::service('captcha.helper')->insertCaptchaElement($form, $placement, $captcha_element);
 }
 
 /**
