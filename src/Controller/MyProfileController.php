@@ -9,12 +9,12 @@ use Drupal\Core\Session\AccountInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
- * Redirects a logged-in user to the profile node they own.
+ * Redirects a logged-in user to their own profile node.
  *
- * Profiles were migrated from D7 user accounts with the node's author set to
- * the matching user (upgrade_d7_user_to_profile), so ownership is the link
- * between an account and "their" profile. Users whose profile fell back to
- * uid 1 (no migrated account) have no owned profile and see no link.
+ * field_profile_user names the account a profile belongs to — the same link
+ * the Profile tab, the /user/N redirect and edit access use. The node author
+ * is not that link: profiles created by an editor on someone's behalf are
+ * authored by the editor (or uid 1) and would otherwise show no profile.
  */
 class MyProfileController extends ControllerBase {
 
@@ -39,9 +39,9 @@ class MyProfileController extends ControllerBase {
   }
 
   /**
-   * Returns the nid of the profile node owned by the account, if any.
+   * Returns the nid of the profile node that names the account, if any.
    *
-   * Prefers a published profile if the user somehow owns more than one.
+   * Prefers a published profile if the user somehow has more than one.
    */
   private function findProfileNid(AccountInterface $account): ?int {
     if ($account->isAnonymous()) {
@@ -49,7 +49,7 @@ class MyProfileController extends ControllerBase {
     }
     $nids = $this->entityTypeManager()->getStorage('node')->getQuery()
       ->condition('type', 'osu_profile')
-      ->condition('uid', $account->id())
+      ->condition('field_profile_user', $account->id())
       ->sort('status', 'DESC')
       ->sort('nid')
       ->range(0, 1)

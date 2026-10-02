@@ -56,18 +56,17 @@ class DashboardController extends ControllerBase {
   }
 
   /**
-   * Returns a URL to the current user's own profile node, if they own one.
+   * Returns a URL to the current user's own profile node, if they have one.
    *
-   * Profiles were migrated from D7 accounts with the node's author set to the
-   * matching user, so ownership is the link between an account and "their"
-   * profile — the same rule MyProfileController::findProfileNid() applies, and
-   * the two must stay in step. Users whose profile fell back to uid 1 own none
-   * and get no link.
+   * field_profile_user names the account a profile belongs to — the same rule
+   * MyProfileController::findProfileNid() applies, and the two must stay in
+   * step. The node author is not that link: a profile an editor created for
+   * someone is authored by the editor. Users with no profile get no link.
    */
   private function profileUrl(): ?Url {
     $nids = $this->entityTypeManager()->getStorage('node')->getQuery()
       ->condition('type', 'osu_profile')
-      ->condition('uid', $this->currentUser()->id())
+      ->condition('field_profile_user', $this->currentUser()->id())
       ->sort('status', 'DESC')
       ->sort('nid')
       ->range(0, 1)
