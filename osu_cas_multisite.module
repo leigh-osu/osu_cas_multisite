@@ -17,6 +17,33 @@ use Drupal\osu_cas_multisite\Render\CasBrandingGroupFallback;
 use Drupal\views\Views;
 
 /**
+ * Implements hook_toolbar_alter().
+ *
+ * The Tour tab goes for everyone: no page on this platform carries a tour,
+ * so the tab only ever reads "No tour".
+ *
+ * A person with no role beyond "authenticated" (an ONID login that only owns
+ * a profile) also loses Manage, Shortcuts and the menu search: that role
+ * carries "access toolbar", but the Manage tray is empty for them, Shortcuts
+ * leads to admin pages and the search searches the Manage menu — tabs that
+ * only make the toolbar look broken. They keep their own name tab (dashboard,
+ * profile, log out) and whatever other modules add, such as Unmasquerade.
+ */
+function osu_cas_multisite_toolbar_alter(array &$items): void {
+  unset($items['tour']);
+  $account = \Drupal::currentUser();
+  if (!$account->isAuthenticated() || $account->getRoles(TRUE)) {
+    return;
+  }
+  unset($items['administration'], $items['shortcuts'], $items['administration_search']);
+  // The toolbar is cached per permissions hash; vary on roles as well so a
+  // role that grants nothing still gets the full toolbar.
+  if (isset($items['user'])) {
+    $items['user']['#cache']['contexts'][] = 'user.roles';
+  }
+}
+
+/**
  * Implements hook_node_access().
  *
  * Lets a person edit their own profile. field_profile_user names the account a
