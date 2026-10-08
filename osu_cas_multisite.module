@@ -13,6 +13,7 @@ use Drupal\Core\Entity\FieldableEntityInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\node\NodeInterface;
+use Drupal\osu_cas_multisite\Entity\CasGroupListBuilder;
 use Drupal\osu_cas_multisite\Render\CasBrandingGroupFallback;
 use Drupal\views\Views;
 
@@ -568,4 +569,15 @@ function osu_cas_multisite_page_attachments(array &$attachments): void {
     ],
     'osu_cas_multisite_monsido_script',
   ];
+}
+
+/**
+ * Implements hook_entity_type_alter().
+ *
+ * The Groups admin list opens sorted by name rather than by group ID.
+ */
+function osu_cas_multisite_entity_type_alter(array &$entity_types): void {
+  if (isset($entity_types['group'])) {
+    $entity_types['group']->setListBuilderClass(CasGroupListBuilder::class);
+  }
 }
