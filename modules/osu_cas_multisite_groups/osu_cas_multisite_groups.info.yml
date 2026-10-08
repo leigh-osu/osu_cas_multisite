@@ -3,11 +3,13 @@ type: module
 description: 'Group and domain support for the CAS platform: group-aware breadcrumbs, the group create-content block, views group field/filter, the user dashboard at /dashboard, and the My Groups page.'
 package: 'OSU CAS'
 core_version_requirement: ^10 || ^11
-version: 1.31.0
+version: 1.32.0
 dependencies:
   - drupal:node
   - drupal:user
   - drupal:views
+  # Move/Add to another group bulk actions extend its action base class.
+  - views_bulk_operations:views_bulk_operations
   - domain:domain
   # Ships field.storage.node.field_domain_source, which the My Content view's
   # domain filter and column depend on.

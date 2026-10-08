@@ -11,6 +11,7 @@ use Drupal\Core\Session\AccountInterface;
 use Drupal\Core\Url;
 use Drupal\group\Entity\GroupRelationship;
 use Drupal\node\NodeInterface;
+use Drupal\osu_cas_multisite_groups\Plugin\views\access\CasGroupPermission;
 
 /**
  * Implements hook_form_FORM_ID_alter() for node_osu_profile_edit_form.
@@ -732,4 +733,17 @@ function _osu_cas_multisite_groups_group_vocabularies(NodeInterface $node): ?arr
     }
   }
   return $allowed ? array_values($allowed) : NULL;
+}
+
+/**
+ * Implements hook_views_plugins_access_alter().
+ *
+ * Group-permission views also resolve their group from the view argument, so
+ * Views Bulk Operations' own routes (selection AJAX, action configure form)
+ * pass access. See CasGroupPermission.
+ */
+function osu_cas_multisite_groups_views_plugins_access_alter(array &$plugins): void {
+  if (isset($plugins['group_permission'])) {
+    $plugins['group_permission']['class'] = CasGroupPermission::class;
+  }
 }
