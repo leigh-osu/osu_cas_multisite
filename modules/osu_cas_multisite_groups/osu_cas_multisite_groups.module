@@ -556,6 +556,42 @@ function _osu_cas_multisite_groups_limit_group_count(array &$element, string $bu
 }
 
 /**
+ * Allowed form of a group's path segment: lowercase letters and digits in
+ * runs joined by single hyphens. No leading, trailing or doubled hyphen, so
+ * the value can be dropped into an alias as one clean folder.
+ */
+const OSU_CAS_GROUP_PATH_PATTERN = '[a-z0-9]+(-[a-z0-9]+)*';
+
+/**
+ * Implements hook_entity_bundle_field_info_alter().
+ *
+ * Restricts Group Path to OSU_CAS_GROUP_PATH_PATTERN.
+ *
+ * Group Path is the folder a group's content sits under in path aliases --
+ * what D7's field_short_name was before the migration turned the short name
+ * into a display label. Config fields carry no pattern setting, so the rule is
+ * a constraint here, where it holds for every save (form, drush, script), not
+ * only for the form.
+ *
+ * Unique as well: two groups on one folder would put their content in the same
+ * alias namespace, and the second group's pages would collide with the first's.
+ */
+function osu_cas_multisite_groups_entity_bundle_field_info_alter(array &$fields, \Drupal\Core\Entity\EntityTypeInterface $entity_type, string $bundle): void {
+  if ($entity_type->id() !== 'group' || !isset($fields['field_group_path'])) {
+    return;
+  }
+  $fields['field_group_path']->addConstraint('UniqueField', [
+    'message' => 'Group Path %value is already used by another group.',
+  ]);
+  $fields['field_group_path']->addPropertyConstraints('value', [
+    'Regex' => [
+      'pattern' => '/^' . OSU_CAS_GROUP_PATH_PATTERN . '$/',
+      'message' => 'Group Path may contain only lowercase letters, numbers and single dashes, and must start and end with a letter or number.',
+    ],
+  ]);
+}
+
+/**
  * Domain fields shown only to users who administer domains.
  */
 const OSU_CAS_DOMAIN_FIELDS = [
@@ -626,6 +662,12 @@ function osu_cas_multisite_groups_node_presave(\Drupal\node\NodeInterface $node)
  * and is not good for.
  */
 function osu_cas_multisite_groups_field_widget_single_element_form_alter(array &$element, FormStateInterface $form_state, array $context): void {
+  if ($context['items']->getFieldDefinition()->getName() === 'field_group_path' && isset($element['value'])) {
+    // Browser-side mirror of the Regex constraint, so a bad value is flagged
+    // before submit. The constraint is the rule; this is only a convenience.
+    $element['value']['#pattern'] = OSU_CAS_GROUP_PATH_PATTERN;
+    return;
+  }
   if ($context['items']->getFieldDefinition()->getName() !== 'field_group_private') {
     return;
   }
