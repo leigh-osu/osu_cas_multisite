@@ -690,8 +690,8 @@ function osu_cas_multisite_groups_field_widget_single_element_form_alter(array &
  * relevant to the person writing, and a wall of empty selects is how tagging
  * stops happening at all.
  *
- * A group names the vocabularies it uses on its OSU CAS tab; the rest are
- * hidden while writing there. Two rules keep this from losing anything:
+ * A group names the vocabularies it uses on its Content Settings tab; the rest
+ * are hidden while writing there. Two rules keep this from losing anything:
  *
  * - A group naming nothing shows everything, which is today's behaviour and the
  *   state all 195 groups start in.
