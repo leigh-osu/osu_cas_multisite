@@ -303,6 +303,32 @@ function osu_cas_multisite_form_alter(array &$form, FormStateInterface $form_sta
 }
 
 /**
+ * Implements hook_form_BASE_FORM_ID_alter() for node_form.
+ *
+ * A profile always gets its /directory/people/<name> alias. The path widget
+ * carries a "Generate automatic URL alias" checkbox for everyone with 'create
+ * url aliases', and one untick (a migrated profile retitled on 2026-10-23)
+ * left a profile reachable only at /node/<nid>. On profiles the checkbox is
+ * pinned on, except for alias administrators, who may need a one-off
+ * exception and know what they are doing.
+ */
+function osu_cas_multisite_form_node_form_alter(array &$form, FormStateInterface $form_state, $form_id): void {
+  $node = $form_state->getFormObject()->getEntity();
+  if ($node->bundle() !== 'osu_profile'
+    || !isset($form['path']['widget'][0]['pathauto'])
+    || \Drupal::currentUser()->hasPermission('administer url aliases')) {
+    return;
+  }
+  // An inaccessible element submits its default, so this both hides the
+  // checkbox and fixes its value. The alias box stays visible but read-only,
+  // the state the widget's own #states would give it with the box ticked.
+  $form['path']['widget'][0]['pathauto']['#default_value'] = TRUE;
+  $form['path']['widget'][0]['pathauto']['#access'] = FALSE;
+  $form['path']['widget'][0]['alias']['#disabled'] = TRUE;
+  $form['path']['widget'][0]['alias']['#description'] = t('Generated from the name when the profile is saved.');
+}
+
+/**
  * Adds the default CAPTCHA element to a webform submission form.
  *
  * Only the visitor-facing add form: edit/test/draft-edit operations are
