@@ -217,6 +217,16 @@ function osu_cas_multisite_groups_field_widget_complete_form_alter(array &$field
  * the required error.
  */
 function _osu_cas_multisite_groups_adopt_pending_group(array $element, FormStateInterface $form_state): void {
+  // Only on a real save. The widget's own buttons (Add to Group, Edit,
+  // Remove...) all submit with #limit_validation_errors and still run this
+  // validator; consuming the selection there leaves addMoreSubmit loading a
+  // NULL group ("Call to a member function getGroupType() on null"), which
+  // the editor sees as "Oops, something went wrong".
+  $trigger = $form_state->getTriggeringElement();
+  if (isset($trigger['#limit_validation_errors']) && $trigger['#limit_validation_errors'] !== FALSE) {
+    return;
+  }
+
   $field_name = $element['#field_name'];
   $parents = $element['#field_parents'];
 
