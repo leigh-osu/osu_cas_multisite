@@ -120,9 +120,22 @@ function osu_cas_multisite_groups_node_access_records_alter(array &$grants, Node
  * short-circuits the grants table entirely. Forbidden beats allowed, so for
  * a flagged node this denies everyone who is not a member of one of its
  * groups. Accounts with 'bypass node access' never reach node-access hooks.
+ *
+ * The same short-circuit is why a profile placed in a group opens on every
+ * domain: Domain Access only writes grants, and gnode's "allowed" skips them.
+ * Profiles are therefore also held to their own Domain Access assignment here.
  */
 function osu_cas_multisite_groups_node_access(NodeInterface $node, string $op, AccountInterface $account): \Drupal\Core\Access\AccessResultInterface {
+  if ($op === 'view' && $node->bundle() === 'osu_profile') {
+    $off_domain = _osu_cas_multisite_groups_profile_off_domain($node, $account);
+    if ($off_domain) {
+      return $off_domain;
+    }
+  }
   $neutral = \Drupal\Core\Access\AccessResult::neutral()->addCacheableDependency($node);
+  if ($op === 'view' && $node->bundle() === 'osu_profile') {
+    $neutral->addCacheContexts(['url.site']);
+  }
   if ($op !== 'view'
     || !$node->hasField('field_group_private')
     || empty($node->get('field_group_private')->value)) {
@@ -136,6 +149,46 @@ function osu_cas_multisite_groups_node_access(NodeInterface $node, string $op, A
   }
   return \Drupal\Core\Access\AccessResult::forbidden('Group members only.')
     ->addCacheableDependency($node)
+    ->cachePerUser();
+}
+
+/**
+ * Forbids viewing a profile on a domain it is not assigned to.
+ *
+ * Returns NULL when the profile belongs on the active domain (listed in
+ * field_domain_access, or flagged for all affiliates) and when the rule does
+ * not apply: on the command line, where there is no real hostname and the
+ * negotiator just reports the default domain, and for anyone who may edit the
+ * profile, so an editor is not locked out of the page they have just saved
+ * from another site.
+ *
+ * Unpublished profiles are left to domain_unpublished and moderation.
+ */
+function _osu_cas_multisite_groups_profile_off_domain(NodeInterface $node, AccountInterface $account): ?\Drupal\Core\Access\AccessResultInterface {
+  if (PHP_SAPI === 'cli'
+    || !$node->isPublished()
+    || !$node->hasField('field_domain_access')
+    || !\Drupal::hasService('domain.negotiator')) {
+    return NULL;
+  }
+  if ($node->hasField('field_domain_all_affiliates') && !empty($node->get('field_domain_all_affiliates')->value)) {
+    return NULL;
+  }
+  $domain = \Drupal::service('domain.negotiator')->getActiveDomain();
+  if (!$domain) {
+    return NULL;
+  }
+  foreach ($node->get('field_domain_access') as $item) {
+    if ($item->target_id === $domain->id()) {
+      return NULL;
+    }
+  }
+  if ($account->isAuthenticated() && $node->access('update', $account)) {
+    return NULL;
+  }
+  return \Drupal\Core\Access\AccessResult::forbidden('Profile is not assigned to this domain.')
+    ->addCacheableDependency($node)
+    ->addCacheContexts(['url.site'])
     ->cachePerUser();
 }
 
